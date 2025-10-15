@@ -9,17 +9,42 @@ import time
 import json
 import smtplib
 import psutil
+import numpy as np
+import pandas as pd
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional
 from database.service import DatabaseService
 
+# AI/ML imports for predictive analytics
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import gym
+from gym import spaces
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_checker import check_env
+import requests
+
 class SystemMonitor:
     def __init__(self):
         self.alerts_sent = {}
         self.metrics_history = []
         self.alert_cooldown = 300  # 5 minutes
+
+        # AI/ML components
+        self.burnout_model = None
+        self.performance_model = None
+        self.feedback_rl_agent = None
+        self.scaler = StandardScaler()
+
+        # Initialize models
+        self._initialize_models()
         
     def collect_system_metrics(self) -> Dict:
         """Collect system performance metrics"""
@@ -38,23 +63,27 @@ class SystemMonitor:
             with DatabaseService() as db:
                 orders = db.get_orders()
                 returns = db.get_returns()
-                
+
                 # Calculate business metrics
                 total_orders = len(orders)
                 pending_orders = len([o for o in orders if o.get('Status') == 'Processing'])
                 total_returns = len(returns)
-                
+
                 # Get recent activity (last 24 hours)
                 recent_cutoff = datetime.now() - timedelta(hours=24)
-                recent_orders = len([o for o in orders if 'OrderDate' in o and 
-                                   datetime.fromisoformat(o['OrderDate']) > recent_cutoff])
-                
+                recent_orders = len([o for o in orders if 'OrderDate' in o and
+                                    datetime.fromisoformat(o['OrderDate']) > recent_cutoff])
+
+                # Collect employee performance data for AI analysis
+                employee_metrics = self._collect_employee_metrics()
+
                 return {
                     "total_orders": total_orders,
                     "pending_orders": pending_orders,
                     "total_returns": total_returns,
                     "recent_orders_24h": recent_orders,
-                    "order_processing_rate": recent_orders / 24 if recent_orders > 0 else 0
+                    "order_processing_rate": recent_orders / 24 if recent_orders > 0 else 0,
+                    "employee_metrics": employee_metrics
                 }
         except Exception as e:
             return {"error": str(e)}
@@ -98,7 +127,7 @@ class SystemMonitor:
     def detect_anomalies(self, metrics: Dict) -> List[Dict]:
         """Detect system anomalies and issues"""
         anomalies = []
-        
+
         # High resource usage
         if metrics.get("cpu_percent", 0) > 80:
             anomalies.append({
@@ -106,21 +135,21 @@ class SystemMonitor:
                 "severity": "warning",
                 "message": f"High CPU usage: {metrics['cpu_percent']:.1f}%"
             })
-        
+
         if metrics.get("memory_percent", 0) > 85:
             anomalies.append({
                 "type": "high_memory",
                 "severity": "critical",
                 "message": f"High memory usage: {metrics['memory_percent']:.1f}%"
             })
-        
+
         if metrics.get("disk_percent", 0) > 90:
             anomalies.append({
                 "type": "high_disk",
                 "severity": "critical",
                 "message": f"High disk usage: {metrics['disk_percent']:.1f}%"
             })
-        
+
         # Application-specific anomalies
         app_metrics = metrics.get("application", {})
         if app_metrics.get("pending_orders", 0) > 100:
@@ -129,7 +158,7 @@ class SystemMonitor:
                 "severity": "warning",
                 "message": f"High pending orders: {app_metrics['pending_orders']}"
             })
-        
+
         # API health issues
         api_health = metrics.get("api", {})
         if api_health.get("status") != "healthy":
@@ -138,7 +167,15 @@ class SystemMonitor:
                 "severity": "critical",
                 "message": f"API unhealthy: {api_health.get('error', 'Unknown error')}"
             })
-        
+
+        # AI-powered employee burnout detection
+        employee_anomalies = self._detect_employee_burnout(metrics)
+        anomalies.extend(employee_anomalies)
+
+        # AI-powered performance trend analysis
+        performance_anomalies = self._detect_performance_trends(metrics)
+        anomalies.extend(performance_anomalies)
+
         return anomalies
     
     def send_email_alert(self, subject: str, body: str) -> bool:
@@ -303,23 +340,339 @@ class SystemMonitor:
             f.write(report)
         
         print(f"✅ Monitoring cycle completed - {len(anomalies)} anomalies detected")
-        return metrics, anomalies
+
+        # Generate personalized feedback using RL
+        feedback = self._generate_personalized_feedback(metrics)
+
+        return metrics, anomalies, feedback
+
+    def _initialize_models(self):
+        """Initialize AI/ML models"""
+        try:
+            # Initialize burnout prediction model
+            self.burnout_model = RandomForestClassifier(n_estimators=100, random_state=42)
+
+            # Initialize performance forecasting model
+            self.performance_model = keras.Sequential([
+                layers.Dense(64, activation='relu', input_shape=(10,)),
+                layers.Dense(32, activation='relu'),
+                layers.Dense(1, activation='linear')
+            ])
+            self.performance_model.compile(optimizer='adam', loss='mse')
+
+            # Initialize RL environment and agent for feedback
+            self.feedback_env = FeedbackEnvironment()
+            self.feedback_rl_agent = PPO("MlpPolicy", self.feedback_env, verbose=0)
+
+            print("🤖 AI/ML models initialized successfully")
+        except Exception as e:
+            print(f"⚠️  Failed to initialize AI/ML models: {e}")
+
+    def _collect_employee_metrics(self) -> Dict:
+        """Collect employee performance and wellness metrics"""
+        try:
+            # Simulate employee data collection (in real implementation, this would come from HR systems)
+            # For demo purposes, we'll generate synthetic data
+            return {
+                "avg_work_hours": np.random.normal(8, 1.5),
+                "task_completion_rate": np.random.uniform(0.7, 1.0),
+                "error_rate": np.random.uniform(0, 0.1),
+                "response_time": np.random.normal(30, 10),
+                "break_frequency": np.random.uniform(0.5, 2.0),
+                "collaboration_score": np.random.uniform(0.6, 1.0),
+                "stress_indicators": np.random.uniform(0, 1.0),
+                "engagement_score": np.random.uniform(0.5, 1.0)
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _detect_employee_burnout(self, metrics: Dict) -> List[Dict]:
+        """Predict employee burnout using ML model"""
+        anomalies = []
+        try:
+            if self.burnout_model is None:
+                return anomalies
+
+            employee_data = metrics.get("application", {}).get("employee_metrics", {})
+            if not employee_data or "error" in employee_data:
+                return anomalies
+
+            # Prepare features for burnout prediction
+            features = np.array([
+                employee_data.get("avg_work_hours", 8),
+                employee_data.get("task_completion_rate", 0.8),
+                employee_data.get("error_rate", 0.05),
+                employee_data.get("response_time", 30),
+                employee_data.get("break_frequency", 1.0),
+                employee_data.get("collaboration_score", 0.8),
+                employee_data.get("stress_indicators", 0.3),
+                employee_data.get("engagement_score", 0.7)
+            ]).reshape(1, -1)
+
+            # Scale features
+            features_scaled = self.scaler.transform(features)
+
+            # Predict burnout probability
+            burnout_prob = self.burnout_model.predict_proba(features_scaled)[0][1]
+
+            if burnout_prob > 0.7:
+                anomalies.append({
+                    "type": "employee_burnout_risk",
+                    "severity": "critical",
+                    "message": f"High burnout risk detected (probability: {burnout_prob:.2f})",
+                    "employee_data": employee_data
+                })
+            elif burnout_prob > 0.5:
+                anomalies.append({
+                    "type": "employee_burnout_warning",
+                    "severity": "warning",
+                    "message": f"Moderate burnout risk detected (probability: {burnout_prob:.2f})",
+                    "employee_data": employee_data
+                })
+
+        except Exception as e:
+            print(f"⚠️  Burnout detection error: {e}")
+
+        return anomalies
+
+    def _detect_performance_trends(self, metrics: Dict) -> List[Dict]:
+        """Forecast performance trends using TensorFlow model"""
+        anomalies = []
+        try:
+            if self.performance_model is None or len(self.metrics_history) < 5:
+                return anomalies
+
+            # Prepare time series data for forecasting
+            recent_metrics = self.metrics_history[-10:]
+            features = []
+
+            for m in recent_metrics:
+                app_metrics = m.get("application", {})
+                emp_metrics = app_metrics.get("employee_metrics", {})
+
+                feature_vector = [
+                    app_metrics.get("total_orders", 0),
+                    app_metrics.get("pending_orders", 0),
+                    app_metrics.get("order_processing_rate", 0),
+                    emp_metrics.get("task_completion_rate", 0.8),
+                    emp_metrics.get("error_rate", 0.05),
+                    emp_metrics.get("engagement_score", 0.7),
+                    m.get("cpu_percent", 0),
+                    m.get("memory_percent", 0),
+                    len(recent_metrics),  # time index
+                    1 if m.get("api", {}).get("status") == "healthy" else 0
+                ]
+                features.append(feature_vector)
+
+            if len(features) >= 5:
+                features_array = np.array(features[-5:])
+                predictions = self.performance_model.predict(features_array, verbose=0)
+
+                # Check for declining trends
+                recent_predictions = predictions[-3:]
+                if len(recent_predictions) >= 3:
+                    trend = np.polyfit(range(len(recent_predictions)), recent_predictions.flatten(), 1)[0]
+                    if trend < -0.1:  # Significant decline
+                        anomalies.append({
+                            "type": "performance_decline_trend",
+                            "severity": "warning",
+                            "message": f"Performance decline detected (trend: {trend:.3f})",
+                            "trend_data": recent_predictions.tolist()
+                        })
+
+        except Exception as e:
+            print(f"⚠️  Performance trend detection error: {e}")
+
+        return anomalies
+
+    def _generate_personalized_feedback(self, metrics: Dict) -> Dict:
+        """Generate personalized feedback using RL agent"""
+        try:
+            if self.feedback_rl_agent is None:
+                return {"feedback": "RL agent not initialized"}
+
+            # Prepare state for RL agent
+            employee_data = metrics.get("application", {}).get("employee_metrics", {})
+            app_metrics = metrics.get("application", {})
+
+            state = np.array([
+                employee_data.get("task_completion_rate", 0.8),
+                employee_data.get("error_rate", 0.05),
+                employee_data.get("engagement_score", 0.7),
+                employee_data.get("stress_indicators", 0.3),
+                app_metrics.get("pending_orders", 0) / 100,  # normalized
+                app_metrics.get("order_processing_rate", 0),
+                1 if metrics.get("api", {}).get("status") == "healthy" else 0
+            ])
+
+            # Get action from RL agent
+            action, _ = self.feedback_rl_agent.predict(state, deterministic=True)
+
+            # Map action to feedback type
+            feedback_types = [
+                "encouragement",
+                "break_reminder",
+                "training_suggestion",
+                "workload_adjustment",
+                "positive_reinforcement"
+            ]
+
+            feedback_type = feedback_types[action % len(feedback_types)]
+
+            # Generate dynamic reward based on task completion
+            task_completion = employee_data.get("task_completion_rate", 0.8)
+            reward = task_completion * 10 - employee_data.get("error_rate", 0.05) * 50
+
+            return {
+                "feedback_type": feedback_type,
+                "reward": reward,
+                "personalized_message": self._create_feedback_message(feedback_type, employee_data),
+                "action_taken": action
+            }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _create_feedback_message(self, feedback_type: str, employee_data: Dict) -> str:
+        """Create personalized feedback message"""
+        messages = {
+            "encouragement": "Great job today! Keep up the excellent work on task completion.",
+            "break_reminder": "You've been working hard. Consider taking a short break to recharge.",
+            "training_suggestion": "Based on your performance, you might benefit from additional training in error reduction.",
+            "workload_adjustment": "Your current workload seems optimal. Continue maintaining this balance.",
+            "positive_reinforcement": "Outstanding performance! Your engagement and accuracy are exemplary."
+        }
+        return messages.get(feedback_type, "Keep up the good work!")
+
+    def integrate_hr_systems(self) -> Dict:
+        """Integrate with external HR systems (Workday/BambooHR)"""
+        results = {}
+
+        try:
+            # Workday integration
+            workday_url = os.getenv("WORKDAY_API_URL")
+            workday_token = os.getenv("WORKDAY_API_TOKEN")
+
+            if workday_url and workday_token:
+                headers = {"Authorization": f"Bearer {workday_token}"}
+                response = requests.get(f"{workday_url}/employees", headers=headers, timeout=10)
+
+                if response.status_code == 200:
+                    results["workday"] = {
+                        "status": "success",
+                        "employee_count": len(response.json()),
+                        "last_sync": datetime.now().isoformat()
+                    }
+                else:
+                    results["workday"] = {"status": "error", "message": f"API error: {response.status_code}"}
+
+            # BambooHR integration
+            bamboo_url = os.getenv("BAMBOOHR_API_URL")
+            bamboo_key = os.getenv("BAMBOOHR_API_KEY")
+
+            if bamboo_url and bamboo_key:
+                headers = {"Authorization": f"Basic {bamboo_key}"}
+                response = requests.get(f"{bamboo_url}/employees/directory", headers=headers, timeout=10)
+
+                if response.status_code == 200:
+                    results["bamboohr"] = {
+                        "status": "success",
+                        "data": response.json(),
+                        "last_sync": datetime.now().isoformat()
+                    }
+                else:
+                    results["bamboohr"] = {"status": "error", "message": f"API error: {response.status_code}"}
+
+        except Exception as e:
+            results["error"] = str(e)
+
+        return results
+
+
+class FeedbackEnvironment(gym.Env):
+    """Custom RL environment for personalized feedback generation"""
+
+    def __init__(self):
+        super(FeedbackEnvironment, self).__init__()
+
+        # Action space: different types of feedback
+        self.action_space = spaces.Discrete(5)
+
+        # Observation space: employee metrics
+        self.observation_space = spaces.Box(low=0, high=1, shape=(7,), dtype=np.float32)
+
+        self.current_state = None
+        self.episode_length = 0
+
+    def reset(self):
+        """Reset environment"""
+        self.current_state = self.observation_space.sample()
+        self.episode_length = 0
+        return self.current_state
+
+    def step(self, action):
+        """Execute action and return reward"""
+        self.episode_length += 1
+
+        # Calculate reward based on action appropriateness
+        # Higher reward for actions that match employee state
+        task_completion = self.current_state[0]
+        error_rate = self.current_state[1]
+        engagement = self.current_state[2]
+        stress = self.current_state[3]
+
+        if action == 0:  # encouragement
+            reward = task_completion * 2
+        elif action == 1:  # break reminder
+            reward = stress * 3 - task_completion
+        elif action == 2:  # training suggestion
+            reward = error_rate * 4
+        elif action == 3:  # workload adjustment
+            reward = (1 - engagement) * 2 + stress * 2
+        elif action == 4:  # positive reinforcement
+            reward = engagement * 3
+        else:
+            reward = 0
+
+        # Add bonus for task completion linked to logistics deliveries
+        logistics_completion_bonus = task_completion * 5
+
+        total_reward = reward + logistics_completion_bonus
+
+        # Episode ends after certain length
+        done = self.episode_length >= 10
+
+        # Generate new state (simplified)
+        self.current_state = self.observation_space.sample()
+
+        return self.current_state, total_reward, done, {}
+
 
 def main():
     """Main monitoring loop"""
     monitor = SystemMonitor()
-    
-    print("🔍 Starting AI Agent System Monitor")
+
+    print("🔍 Starting AI Agent System Monitor with ML/AI capabilities")
     print("Press Ctrl+C to stop")
-    
+
     try:
         while True:
-            monitor.run_monitoring_cycle()
-            
+            metrics, anomalies, feedback = monitor.run_monitoring_cycle()
+
+            # Log AI insights
+            if feedback and "error" not in feedback:
+                print(f"🤖 AI Feedback: {feedback.get('personalized_message', 'N/A')} (Reward: {feedback.get('reward', 0):.2f})")
+
+            # HR system integration (run less frequently)
+            if int(time.time()) % 3600 == 0:  # Every hour
+                hr_data = monitor.integrate_hr_systems()
+                if hr_data:
+                    print(f"🏢 HR Systems sync completed: {len(hr_data)} systems updated")
+
             # Wait for next cycle
             interval = int(os.getenv("MONITORING_INTERVAL", "60"))  # 1 minute default
             time.sleep(interval)
-            
+
     except KeyboardInterrupt:
         print("\n🛑 Monitoring stopped")
 

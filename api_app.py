@@ -217,12 +217,12 @@ office365 = Office365Integration()
 async def startup_event():
     init_database()
     create_crm_tables()
-    print("✅ Database initialized")
-    print("✅ CRM Database initialized")
-    print("🔒 Authentication system ready")
-    print("🤖 LLM Query System ready")
-    print("🗺️ Google Maps integration ready")
-    print("📧 Office 365 integration ready")
+    print("Database initialized")
+    print("CRM Database initialized")
+    print("Authentication system ready")
+    print("LLM Query System ready")
+    print("Google Maps integration ready")
+    print("Office 365 integration ready")
 
 @app.get("/")
 def read_root():
@@ -697,6 +697,217 @@ def run_notification_system():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/dashboard/charts")
+def get_dashboard_charts():
+    """Get dashboard charts data"""
+    try:
+        with DatabaseService() as db_service:
+            orders = db_service.get_orders(limit=100)
+            shipments = db_service.get_shipments(limit=100)
+            inventory = db_service.get_inventory()
+
+        # Process order status distribution
+        order_status = {}
+        for order in orders:
+            status = order.get('Status', 'unknown')
+            order_status[status] = order_status.get(status, 0) + 1
+
+        # Process shipment status distribution
+        shipment_status = {}
+        for shipment in shipments:
+            status = shipment.get('status', 'unknown')
+            shipment_status[status] = shipment_status.get(status, 0) + 1
+
+        # Process inventory data for charts
+        inventory_data = {
+            'labels': [item['ProductID'] for item in inventory[:15]],  # Top 15 products
+            'currentStock': [item['CurrentStock'] for item in inventory[:15]],
+            'reorderPoint': [item['ReorderPoint'] for item in inventory[:15]]
+        }
+
+        return {
+            "orderStatus": order_status,
+            "shipmentStatus": shipment_status,
+            "inventory": inventory_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === EMPLOYEE API ENDPOINTS ===
+
+@app.get("/api/employee/{employee_id}/metrics")
+def get_employee_metrics(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get employee personal metrics"""
+    try:
+        # Mock data for now - in production this would come from HR system
+        metrics = {
+            'performance_score': 85.5,
+            'tasks_completed': 47,
+            'pending_reviews': 2,
+            'achievements': [
+                {'title': 'Quality Excellence Award', 'date': '2024-10-01'},
+                {'title': 'Team Player Recognition', 'date': '2024-09-15'}
+            ],
+            'performance_history': [
+                {'date': '2024-10-01', 'score': 82.3},
+                {'date': '2024-10-08', 'score': 85.1},
+                {'date': '2024-10-15', 'score': 85.5}
+            ]
+        }
+        return metrics
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/employee/{employee_id}/review-request")
+def request_employee_review(employee_id: str, review_data: dict, current_user: User = Depends(get_current_user)):
+    """Submit employee review request"""
+    try:
+        # In production, this would save to HR database
+        review_request = {
+            'employee_id': employee_id,
+            'type': review_data.get('type'),
+            'comments': review_data.get('comments'),
+            'status': 'pending',
+            'submitted_at': datetime.now().isoformat()
+        }
+        return {"message": "Review request submitted successfully", "request": review_request}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/employee/{employee_id}/attendance")
+def get_employee_attendance(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get employee attendance history"""
+    try:
+        # Mock attendance data - in production this would come from attendance system
+        attendance_records = [
+            {
+                'date': '2024-10-15',
+                'status': 'present',
+                'check_in': '09:00',
+                'check_out': '17:30',
+                'hours_worked': 8.5
+            },
+            {
+                'date': '2024-10-14',
+                'status': 'present',
+                'check_in': '08:45',
+                'check_out': '17:15',
+                'hours_worked': 8.5
+            },
+            {
+                'date': '2024-10-13',
+                'status': 'present',
+                'check_in': '09:15',
+                'check_out': '17:45',
+                'hours_worked': 8.5
+            }
+        ]
+        return attendance_records
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/employee/{employee_id}/privacy")
+def update_employee_privacy(employee_id: str, privacy_settings: dict, current_user: User = Depends(get_current_user)):
+    """Update employee privacy settings"""
+    try:
+        # In production, this would update user preferences in database
+        settings = {
+            'employee_id': employee_id,
+            'facial_recognition_opt_in': privacy_settings.get('facial_recognition_opt_in', False),
+            'updated_at': datetime.now().isoformat()
+        }
+        return {"message": "Privacy settings updated successfully", "settings": settings}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === ATTENDANCE API ENDPOINTS ===
+
+@app.post("/api/attendance/checkin")
+def attendance_checkin(attendance_data: dict, current_user: User = Depends(get_current_user)):
+    """Process attendance check-in with facial recognition"""
+    try:
+        employee_id = attendance_data.get('employee_id')
+        image_data = attendance_data.get('image_data')
+
+        if not employee_id:
+            raise HTTPException(status_code=400, detail="Employee ID is required")
+
+        # In production, this would process facial recognition
+        # For now, simulate successful check-in
+        checkin_record = {
+            'employee_id': employee_id,
+            'action': 'checkin',
+            'timestamp': attendance_data.get('timestamp', datetime.now().isoformat()),
+            'status': 'success',
+            'method': 'facial_recognition'
+        }
+
+        return {"message": "Check-in successful", "record": checkin_record}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/attendance/checkout")
+def attendance_checkout(attendance_data: dict, current_user: User = Depends(get_current_user)):
+    """Process attendance check-out with facial recognition"""
+    try:
+        employee_id = attendance_data.get('employee_id')
+        image_data = attendance_data.get('image_data')
+
+        if not employee_id:
+            raise HTTPException(status_code=400, detail="Employee ID is required")
+
+        # In production, this would process facial recognition
+        # For now, simulate successful check-out
+        checkout_record = {
+            'employee_id': employee_id,
+            'action': 'checkout',
+            'timestamp': attendance_data.get('timestamp', datetime.now().isoformat()),
+            'status': 'success',
+            'method': 'facial_recognition'
+        }
+
+        return {"message": "Check-out successful", "record": checkout_record}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/attendance/{employee_id}")
+def get_attendance_records(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get attendance records for employee"""
+    try:
+        # Mock attendance data - in production this would come from attendance database
+        records = [
+            {
+                'date': '2024-10-15',
+                'status': 'present',
+                'check_in': '09:00',
+                'check_out': '17:30',
+                'hours_worked': 8.5
+            },
+            {
+                'date': '2024-10-14',
+                'status': 'present',
+                'check_in': '08:45',
+                'check_out': '17:15',
+                'hours_worked': 8.5
+            },
+            {
+                'date': '2024-10-11',
+                'status': 'present',
+                'check_in': '09:15',
+                'check_out': '17:45',
+                'hours_worked': 8.5
+            },
+            {
+                'date': '2024-10-10',
+                'status': 'absent',
+                'check_in': None,
+                'check_out': None,
+                'hours_worked': 0
+            }
+        ]
+        return records
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/dashboard/activity")
 def get_recent_activity():
     """Get recent system activity"""
@@ -1625,8 +1836,8 @@ async def delete_product_image(
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting AI Agent Logistics API Server...")
-    print("📊 Dashboard: http://localhost:8501")
-    print("🌐 API Docs: http://localhost:8000/docs")
-    print("🔒 Authentication: JWT enabled")
+    print("Starting AI Agent Logistics API Server...")
+    print("Dashboard: http://localhost:8501")
+    print("API Docs: http://localhost:8000/docs")
+    print("Authentication: JWT enabled")
     uvicorn.run(app, host="0.0.0.0", port=8000)

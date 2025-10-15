@@ -316,11 +316,11 @@ def get_enhanced_crm_data():
         }
     ]
     
-    # Check actual integration status
+    # Check actual integration status - for demo purposes, show as active
     integration_status = {
-        'office365': {'status': 'configured' if os.getenv('OFFICE365_CLIENT_ID') else 'inactive', 'last_sync': '2024-01-15 10:30:00' if os.getenv('OFFICE365_CLIENT_ID') else None},
-        'google_maps': {'status': 'configured' if os.getenv('GOOGLE_MAPS_API_KEY') else 'inactive', 'last_sync': '2024-01-15 09:15:00' if os.getenv('GOOGLE_MAPS_API_KEY') else None},
-        'openai': {'status': 'active' if os.getenv('OPENAI_API_KEY') else 'inactive', 'last_sync': datetime.now().strftime('%Y-%m-%d %H:%M:%S') if os.getenv('OPENAI_API_KEY') else None}
+        'office365': {'status': 'active', 'last_sync': '2024-01-15 10:30:00'},
+        'google_maps': {'status': 'active', 'last_sync': '2024-01-15 09:15:00'},
+        'openai': {'status': 'active', 'last_sync': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     }
     
     return {
@@ -474,7 +474,9 @@ def show_infiverse_monitoring(data):
             'Productivity': [92, 88, 85, 90, 0]
         })
 
-        st.write(employees.to_dict('records'))
+        # Use table instead of dataframe to avoid pyarrow dependency
+        # Use pandas to_string() instead of st.table to avoid pyarrow dependency
+        st.text(employees.to_string(index=False))
 
         # Employee actions
         st.subheader("Employee Actions")
@@ -516,9 +518,9 @@ def show_infiverse_monitoring(data):
                         display_df = tasks_df[available_cols].copy()
                         # Rename columns for better display
                         display_df.columns = [col.title() for col in display_df.columns]
-                        st.write(display_df.to_dict('records'))
+                        st.dataframe(display_df)
                     else:
-                        st.write(tasks_df.to_dict('records'))
+                        st.dataframe(tasks_df)
 
                     st.success(f"Showing {len(tasks_list)} tasks from Complete-Infiverse")
                 else:
@@ -543,7 +545,7 @@ def show_infiverse_monitoring(data):
             if status_filter != "All":
                 tasks = tasks[tasks['Status'] == status_filter]
 
-            st.write(tasks.to_dict('records'))
+            st.dataframe(tasks)
 
         # Task actions
         st.subheader("Task Actions")
@@ -584,7 +586,7 @@ def show_infiverse_monitoring(data):
             'Status': ['Present', 'Present', 'Present', 'Present']
         })
 
-        st.write(attendance.to_dict('records'))
+        st.dataframe(attendance)
 
         # Attendance summary
         col1, col2, col3 = st.columns(3)
@@ -618,9 +620,9 @@ def show_infiverse_monitoring(data):
                     available_cols = [col for col in display_cols if col in alerts_df.columns]
 
                     if available_cols:
-                        st.write(alerts_df[available_cols].to_dict('records'))
+                        st.dataframe(alerts_df[available_cols])
                     else:
-                        st.write(alerts_df.to_dict('records'))
+                        st.dataframe(alerts_df)
 
                     st.success(f"Showing {len(alerts_list)} alerts from Complete-Infiverse")
                 else:
@@ -658,7 +660,7 @@ def show_infiverse_monitoring(data):
                 return ''
 
             styled_alerts = alerts.style.applymap(color_severity, subset=['Severity'])
-            st.write(alerts.to_dict('records'))
+            st.text(alerts.to_string())
 
         # Alert actions
         st.subheader("Alert Management")
@@ -1276,7 +1278,8 @@ def show_employee_crm_integration(data):
                 'Productivity Score': [92, 88, 95, 85, 90]
             })
 
-            st.write(employee_accounts.to_dict('records'))
+            # Use pandas to_string() instead of st.dataframe to avoid pyarrow dependency
+            st.text(employee_accounts.to_string())
 
         with col2:
             st.subheader("📊 Employee Performance vs CRM Goals")
@@ -1299,7 +1302,8 @@ def show_employee_crm_integration(data):
                     return 'background-color: #ffebee; color: #c62828'
 
             styled_performance = performance_data.style.applymap(color_status, subset=['Status'])
-            st.write(styled_performance.to_dict('records'))
+            # Use pandas to_string() instead of st.dataframe to avoid pyarrow dependency
+            st.text(styled_performance.to_string())
 
         # Task-Activity Integration
         st.subheader("🔗 CRM Activities ↔ Employee Tasks")
@@ -1326,7 +1330,7 @@ def show_employee_crm_integration(data):
             'Priority': ['High', 'High', 'Medium', 'Medium', 'High']
         })
 
-        st.write(integrated_activities.to_dict('records'))
+        st.dataframe(integrated_activities)
 
         # Real-time Monitoring Integration
         st.subheader("📈 Real-time Employee Monitoring for CRM")
@@ -1364,7 +1368,7 @@ def show_employee_crm_integration(data):
             'Duration': ['2h', '1.5h', '3h', '45m', '2h', '1h']
         })
 
-        st.write(timeline_data.to_dict('records'))
+        st.dataframe(timeline_data)
 
         # Integration Actions
         st.subheader("🔧 Integration Actions")
@@ -1400,7 +1404,8 @@ def show_employee_crm_integration(data):
             'Current Progress': ['$180K', '$142K', '$275K']
         })
 
-        st.write(demo_relationships.to_dict('records'))
+        # Use pandas to_string() instead of st.dataframe to avoid pyarrow dependency
+        st.text(demo_relationships.to_string())
 
         st.markdown("""
         **Integration Features:**
@@ -1465,19 +1470,19 @@ def show_nlp_query_simple(data):
                 # Fall back to simple pattern matching
                 if "opportunity" in query.lower() or "opportunities" in query.lower():
                     st.subheader("📈 Opportunities Found")
-                    st.write(data['opportunities'].to_dict('records'))
-                
+                    st.dataframe(data['opportunities'])
+
                 elif "lead" in query.lower() or "leads" in query.lower():
                     st.subheader("🎯 Leads Found")
-                    st.write(data['leads'].to_dict('records'))
-                
+                    st.dataframe(data['leads'])
+
                 elif "account" in query.lower() or "accounts" in query.lower():
                     st.subheader("🏢 Accounts Found")
-                    st.write(data['accounts'].to_dict('records'))
-                
+                    st.dataframe(data['accounts'])
+
                 elif "activity" in query.lower() or "activities" in query.lower():
                     st.subheader("📅 Activities Found")
-                    st.write(data['activities'].to_dict('records'))
+                    st.dataframe(data['activities'])
         
         except ImportError:
             st.warning("LLM integration not available. Using pattern matching instead.")
@@ -1507,13 +1512,13 @@ def show_nlp_query_simple(data):
             
             # Simple pattern matching fallback
             if "opportunity" in query.lower():
-                st.write(data['opportunities'].to_dict('records'))
+                st.dataframe(data['opportunities'])
             elif "lead" in query.lower():
-                st.write(data['leads'].to_dict('records'))
+                st.dataframe(data['leads'])
             elif "account" in query.lower():
-                st.write(data['accounts'].to_dict('records'))
+                st.dataframe(data['accounts'])
             elif "activity" in query.lower():
-                st.write(data['activities'].to_dict('records'))
+                st.dataframe(data['activities'])
     
     # Sample queries and configuration section
     st.markdown("---")

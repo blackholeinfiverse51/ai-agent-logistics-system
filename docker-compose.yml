@@ -1,6 +1,42 @@
 version: '3.8'
 
 services:
+  # BHIV Integrator Core with Kubernetes support
+  bhiv-integrator:
+    build:
+      context: ./BHIV_Integrator_Core
+    container_name: bhiv-integrator-core
+    ports:
+      - "8006:8006"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
   # Main API Service
   api:
     build: .
@@ -67,6 +103,27 @@ services:
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RabbitMQ for async event broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ai-agent-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -186,6 +243,8 @@ networks:
 
 volumes:
   redis_data:
+    driver: local
+  rabbitmq_data:
     driver: local
   prometheus_data:
     driver: local

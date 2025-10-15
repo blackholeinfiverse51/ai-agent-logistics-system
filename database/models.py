@@ -676,7 +676,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def create_tables():
     """Create all tables"""
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created successfully")
+    print("[OK] Database tables created successfully")
 
 def get_db():
     """Get database session"""
@@ -694,7 +694,7 @@ def init_database():
     try:
         # Check if data already exists
         if db.query(Order).first():
-            print("📊 Database already has data, skipping initialization")
+            print("[INFO] Database already has data, skipping initialization")
             return
         
         # Import user product catalog
@@ -706,9 +706,9 @@ def init_database():
                 generate_sample_shipments,
                 get_user_product_quantities
             )
-            print("✅ Loaded user product catalog from Excel file")
+            print("[OK] Loaded user product catalog from Excel file")
         except ImportError:
-            print("⚠️  User product catalog not found, using default products")
+            print("[WARN] User product catalog not found, using default products")
             USER_PRODUCT_CATALOG = []
         
         # Generate sample orders using user product catalog
@@ -1343,7 +1343,7 @@ def init_database():
         
         db.commit()
 
-        print("✅ Database initialized with sample data")
+        print("[OK] Database initialized with sample data")
         print(f"   - {len(sample_orders)} orders")
         print(f"   - {len(sample_returns)} returns")
         print(f"   - {len(sample_suppliers)} suppliers")
@@ -1353,7 +1353,7 @@ def init_database():
         print(f"   - {len(sample_agent_logs)} agent activities")
         print(f"   - {len(sample_restock_requests)} restock requests")
         print(f"   - {sum(1 for inv in sample_inventory if inv.needs_reorder)} items need reordering")
-        print("🏢 CRM Data:")
+        print("[CRM] CRM Data:")
         print(f"   - {len(sample_accounts)} accounts")
         print(f"   - {len(sample_contacts)} contacts")
         print(f"   - {len(sample_leads)} leads")
@@ -1362,7 +1362,7 @@ def init_database():
         print(f"   - {len(sample_tasks)} tasks")
         
     except Exception as e:
-        print(f"❌ Error initializing database: {e}")
+        print(f"[ERROR] Error initializing database: {e}")
         db.rollback()
     finally:
         db.close()

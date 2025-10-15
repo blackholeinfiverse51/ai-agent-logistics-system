@@ -20,7 +20,7 @@ class GoogleMapsIntegration:
         self.base_url = 'https://maps.googleapis.com/maps/api'
         
         if not self.api_key:
-            print("⚠️ Google Maps API key not found. Some features may not work.")
+            print("Warning: Google Maps API key not found. Some features may not work.")
     
     def geocode_address(self, address: str) -> Dict:
         """Convert address to latitude/longitude coordinates"""

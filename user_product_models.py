@@ -46,30 +46,54 @@ class UserProductModel:
     key_features: Optional[List[str]] = None
     specifications: Optional[Dict[str, str]] = None
 
+# Data encryption utilities
+from cryptography.fernet import Fernet
+import os
+
+# Initialize encryption (use environment variable or generate key)
+ENCRYPTION_KEY = os.getenv("PRODUCT_ENCRYPTION_KEY", Fernet.generate_key())
+cipher = Fernet(ENCRYPTION_KEY)
+
+def encrypt_sensitive_data(data: str) -> str:
+    """Encrypt sensitive data using Fernet"""
+    if not data:
+        return ""
+    return cipher.encrypt(data.encode()).decode()
+
+def decrypt_sensitive_data(encrypted_data: str) -> str:
+    """Decrypt sensitive data using Fernet"""
+    if not encrypted_data:
+        return ""
+    try:
+        return cipher.decrypt(encrypted_data.encode()).decode()
+    except Exception:
+        # Return original if decryption fails (for backward compatibility)
+        return encrypted_data
+
 # Load products from Excel file
 def load_products_from_excel():
     """Load products from the Excel file"""
     file_path = 'data/MODEL AND QTY copy.xlsx'
-    
+
     if not os.path.exists(file_path):
-        print(f"⚠️  Excel file not found: {file_path}")
+        print(f"Warning: Excel file not found: {file_path}")
         return []
-    
+
     try:
         df = pd.read_excel(file_path)
         df_clean = df[['MODEL', 'QTY']].dropna()
-        
+
         products = []
         for i, row in df_clean.iterrows():
             if row['MODEL'] == 'TOTAL':  # Skip the total row
                 continue
-                
+
             model_name = row['MODEL']
             qty = int(row['QTY'])
-            
+
             # Generate product ID from model name
             product_id = f"USR{i+1:03d}"
-            
+
             # Determine category based on model name
             category = ProductCategory.POWER_BANK  # Default
             if 'POWER BANK' in model_name.upper() or 'POWERBANK' in model_name.upper() or 'PB' in model_name.upper():
@@ -88,14 +112,14 @@ def load_products_from_excel():
                 category = ProductCategory.CHARGER
             elif 'HE' in model_name.upper():
                 category = ProductCategory.HEADPHONES
-            
+
             # Determine supplier based on brand
             supplier_id = "SUPPLIER_001"  # Default
             if 'SYSKA' in model_name.upper():
                 supplier_id = "SUPPLIER_001"  # Syska supplier
             elif 'BOAST' in model_name.upper():
                 supplier_id = "SUPPLIER_002"  # Boast supplier
-            
+
             # Set pricing based on category
             price_map = {
                 ProductCategory.POWER_BANK: 25.99,
@@ -107,7 +131,7 @@ def load_products_from_excel():
                 ProductCategory.CHARGER: 12.99,
                 ProductCategory.HEADPHONES: 29.99
             }
-            
+
             # Set dimensions and weight based on category
             dimensions_map = {
                 ProductCategory.POWER_BANK: "15 x 7 x 2 cm",
@@ -119,7 +143,7 @@ def load_products_from_excel():
                 ProductCategory.CHARGER: "8 x 6 x 4 cm",
                 ProductCategory.HEADPHONES: "20 x 18 x 8 cm"
             }
-            
+
             weight_map = {
                 ProductCategory.POWER_BANK: 0.4,
                 ProductCategory.EARBUDS: 0.1,
@@ -130,11 +154,14 @@ def load_products_from_excel():
                 ProductCategory.CHARGER: 0.2,
                 ProductCategory.HEADPHONES: 0.3
             }
-            
+
             # Generate random quantity instead of using the Excel quantity
             import random
             random_qty = random.randint(5, 50)  # Random quantity between 5 and 50
-            
+
+            # Encrypt sensitive supplier information
+            encrypted_supplier_id = encrypt_sensitive_data(supplier_id)
+
             product = UserProductModel(
                 product_id=product_id,
                 name=model_name,
@@ -143,17 +170,17 @@ def load_products_from_excel():
                 unit_price=price_map.get(category, 20.99),
                 weight_kg=weight_map.get(category, 0.3),
                 dimensions=dimensions_map.get(category, "15 x 10 x 5 cm"),
-                supplier_id=supplier_id,
+                supplier_id=encrypted_supplier_id,  # Store encrypted
                 reorder_point=max(5, random_qty // 3),  # Reorder when 1/3 of current qty
                 max_stock=random_qty * 5,  # Max stock is 5x current qty
                 current_qty=random_qty,
                 is_active=True
             )
-            
+
             products.append(product)
-        
+
         return products
-        
+
     except Exception as e:
         print(f"❌ Error loading products from Excel: {e}")
         return []
@@ -175,7 +202,8 @@ def get_user_products_by_category(category: ProductCategory) -> List[UserProduct
 
 def get_user_products_by_supplier(supplier_id: str) -> List[UserProductModel]:
     """Get all products from a supplier"""
-    return [p for p in USER_PRODUCT_CATALOG if p.supplier_id == supplier_id]
+    # Decrypt supplier IDs for comparison
+    return [p for p in USER_PRODUCT_CATALOG if decrypt_sensitive_data(p.supplier_id) == supplier_id]
 
 def get_all_user_product_ids() -> List[str]:
     """Get all product IDs"""

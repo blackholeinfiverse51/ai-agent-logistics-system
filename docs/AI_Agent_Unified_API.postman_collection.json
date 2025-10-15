@@ -490,7 +490,7 @@
           }
         },
         {
-          "name": "LLM Query",
+          "name": "LLM Query - Opportunities Closing",
           "request": {
             "method": "POST",
             "header": [
@@ -501,7 +501,91 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"Show me all opportunities closing this month\",\n  \"context\": {}\n}"
+              "raw": "{\n  \"query\": \"Show me all opportunities closing this month\",\n  \"context\": {\n    \"user_id\": \"user123\",\n    \"filters\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/llm_query",
+              "host": ["{{base_url}}"],
+              "path": ["llm_query"]
+            }
+          }
+        },
+        {
+          "name": "LLM Query - Pending Tasks",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are the pending tasks for TechCorp?\",\n  \"context\": {\n    \"user_id\": \"user123\",\n    \"filters\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/llm_query",
+              "host": ["{{base_url}}"],
+              "path": ["llm_query"]
+            }
+          }
+        },
+        {
+          "name": "LLM Query - Leads by Source",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"List all leads from trade shows not yet converted\",\n  \"context\": {\n    \"user_id\": \"user123\",\n    \"filters\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/llm_query",
+              "host": ["{{base_url}}"],
+              "path": ["llm_query"]
+            }
+          }
+        },
+        {
+          "name": "LLM Query - Account Summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Account summary for TechCorp Solutions\",\n  \"context\": {\n    \"user_id\": \"user123\",\n    \"filters\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/llm_query",
+              "host": ["{{base_url}}"],
+              "path": ["llm_query"]
+            }
+          }
+        },
+        {
+          "name": "LLM Query - Pipeline Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Pipeline analysis\",\n  \"context\": {\n    \"user_id\": \"user123\",\n    \"filters\": {}\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/llm_query",

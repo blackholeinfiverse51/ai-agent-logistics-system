@@ -267,7 +267,7 @@ def display_performance_charts(data):
                 })
             
             df_products = pd.DataFrame(product_data)
-            st.dataframe(df_products, use_container_width=True)
+            st.dataframe(df_products)
             
             # Category distribution
             category_counts = {}
@@ -333,7 +333,7 @@ def display_recent_activity(data):
                 })
             
             df_activity = pd.DataFrame(display_logs)
-            st.dataframe(df_activity, use_container_width=True)
+            st.dataframe(df_activity)
         else:
             st.info("No recent activity to display")
     
@@ -384,23 +384,8 @@ def display_recent_activity(data):
                 else:
                     df_filtered = df_products
                 
-                # Display the table with sorting options
-                st.dataframe(
-                    df_filtered,
-                    use_container_width=True,
-                    column_config={
-                        "Product ID": st.column_config.TextColumn("Product ID", width="small"),
-                        "Product Name": st.column_config.TextColumn("Product Name", width="large"),
-                        "Category": st.column_config.TextColumn("Category", width="medium"),
-                        "Brand": st.column_config.TextColumn("Brand", width="small"),
-                        "Current Stock": st.column_config.NumberColumn("Stock", width="small"),
-                        "Price": st.column_config.TextColumn("Price", width="small"),
-                        "Supplier": st.column_config.TextColumn("Supplier", width="medium"),
-                        "Recent Orders": st.column_config.NumberColumn("Orders", width="small"),
-                        "Returns": st.column_config.NumberColumn("Returns", width="small"),
-                        "Status": st.column_config.TextColumn("Status", width="small")
-                    }
-                )
+                # Display the table
+                st.dataframe(df_filtered)
                 
                 # Summary statistics
                 col1, col2, col3, col4 = st.columns(4)

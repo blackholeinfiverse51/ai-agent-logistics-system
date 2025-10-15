@@ -202,12 +202,68 @@ response = requests.get("http://localhost:8000/health")
 print(response.json())
 
 # Query chatbot
-response = requests.post("http://localhost:8000/chat", 
+response = requests.post("http://localhost:8000/chat",
                         json={"message": "Where is my order #101?"})
 print(response.json())
 
 # Get pending reviews
 response = requests.get("http://localhost:8000/reviews/pending")
+print(response.json())
+
+# LLM Query Examples - Natural Language CRM Queries
+response = requests.post("http://localhost:8000/llm_query",
+                        json={
+                            "query": "Show me all opportunities closing this month",
+                            "context": {
+                                "user_id": "user123",
+                                "filters": {}
+                            }
+                        })
+print("Opportunities closing this month:")
+print(response.json())
+
+response = requests.post("http://localhost:8000/llm_query",
+                        json={
+                            "query": "What are the pending tasks for TechCorp?",
+                            "context": {
+                                "user_id": "user123",
+                                "filters": {}
+                            }
+                        })
+print("Pending tasks for TechCorp:")
+print(response.json())
+
+response = requests.post("http://localhost:8000/llm_query",
+                        json={
+                            "query": "List all leads from trade shows not yet converted",
+                            "context": {
+                                "user_id": "user123",
+                                "filters": {}
+                            }
+                        })
+print("Unconverted leads from trade shows:")
+print(response.json())
+
+response = requests.post("http://localhost:8000/llm_query",
+                        json={
+                            "query": "Account summary for TechCorp Solutions",
+                            "context": {
+                                "user_id": "user123",
+                                "filters": {}
+                            }
+                        })
+print("Account summary for TechCorp Solutions:")
+print(response.json())
+
+response = requests.post("http://localhost:8000/llm_query",
+                        json={
+                            "query": "Pipeline analysis",
+                            "context": {
+                                "user_id": "user123",
+                                "filters": {}
+                            }
+                        })
+print("Sales pipeline analysis:")
 print(response.json())
 ```
 
