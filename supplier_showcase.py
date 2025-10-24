@@ -495,7 +495,10 @@ def display_statistics():
         """, unsafe_allow_html=True)
     
     with stat_col4:
-        avg_price = sum(p.unit_price for p in USER_PRODUCT_CATALOG) / total_products
+        if total_products > 0:
+            avg_price = sum(p.unit_price for p in USER_PRODUCT_CATALOG) / total_products
+        else:
+            avg_price = 0.0
         st.markdown(f"""
         <div class="stats-card">
             <h3>${avg_price:.2f}</h3>
@@ -532,7 +535,7 @@ def main():
         if filtered_products:
             display_product_grid(filtered_products)
         else:
-            st.info("No products match the selected filters.")
+            st.warning("⚠️ No products found in catalog. Please check the USER_PRODUCT_CATALOG configuration.")
     
     # Footer
     st.markdown("---")

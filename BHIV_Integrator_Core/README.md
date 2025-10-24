@@ -1,6 +1,50 @@
-# BHIV Integrator Core
+# 🎯 BHIV Integrator Core
 
-Unified backend layer connecting Logistics, CRM, and Task Management systems with BHIV Core, UniGuru, and Gurukul pipelines.
+**Production-Ready Unified Backend Layer**
+
+Consolidates Logistics, CRM, and Task Manager systems into one cohesive, event-driven backend connected through BHIV Core, UniGuru, and Gurukul pipelines.
+
+## 🚀 Quick Start
+
+```bash
+# Start the consolidated backend
+python start_integrator.py
+
+# Run integration tests
+python test_integration.py
+
+# Launch unified dashboard
+streamlit run dashboard_integration.py
+```
+
+## 📊 Access Points
+
+- **API Gateway**: http://localhost:8005
+- **API Documentation**: http://localhost:8005/docs
+- **Unified Dashboard**: http://localhost:8501
+- **Event Monitoring**: http://localhost:8005/event/events
+
+## 🎯 Core Deliverables Completed
+
+### ✅ Central Integration Layer (BHIV Bridge)
+- **Event Broker**: `/event/publish` and `/event/subscribe` for all modules
+- **Logistics APIs**: `/logistics/procurement`, `/logistics/delivery`, `/logistics/inventory`
+- **CRM APIs**: `/crm/accounts`, `/crm/leads`, `/crm/opportunities`
+- **Task APIs**: `/task/review`, `/task/feedback`, `/task/workflow-state`
+- **Employee APIs**: `/employee/monitoring`, `/employee/attendance`, `/employee/performance`
+- **BHIV Core Integration**: `/bhiv/agent/register`, `/bhiv/agent/decide`
+
+### ✅ Event-Driven Triggers
+- **Order → CRM Lead → Opportunity → Task Creation**
+- **Delivery delay → Feedback → Task escalation**
+- **Account status change → Compliance → Dashboard refresh**
+- **Employee monitoring → Performance alerts → Task assignment**
+
+### ✅ Unified Logging & Compliance Flow
+- **Structured Logs**: `{system, event_type, reference_id, status, timestamp, DHI_score, compliance_flag}`
+- **Sankalp Integration**: Compliance hooks across all modules
+- **Audit Trail**: Every transaction carries compliance records
+- **Central DB Sync**: Activity logs synced to central database/MongoDB
 
 ## Overview
 

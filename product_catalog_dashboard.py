@@ -539,7 +539,9 @@ def display_product_preview(product):
             st.markdown("### Specifications")
             specs = images["specifications"]
             spec_df = pd.DataFrame(list(specs.items()), columns=["Specification", "Value"])
-            st.table(spec_df)
+            # Display specifications without pyarrow dependency
+            for spec, value in specs.items():
+                st.markdown(f"**{spec}:** {value}")
     
     st.markdown('</div>', unsafe_allow_html=True)
     

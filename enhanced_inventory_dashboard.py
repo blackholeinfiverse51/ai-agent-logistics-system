@@ -265,19 +265,8 @@ with tab1:
     elif sort_by == "Product Name":
         filtered_df = filtered_df.sort_values("Product Name")
     
-    # Enhanced inventory table with action buttons
-    st.dataframe(
-        filtered_df,
-        use_container_width=True,
-        column_config={
-            "Product ID": st.column_config.TextColumn("Product ID", width="small"),
-            "Product Name": st.column_config.TextColumn("Product Name", width="large"),
-            "Current Stock": st.column_config.NumberColumn("Stock", width="small"),
-            "Reorder Point": st.column_config.NumberColumn("Reorder", width="small"),
-            "Stock Status": st.column_config.TextColumn("Status", width="medium"),
-            "Last Updated": st.column_config.DatetimeColumn("Updated", width="medium")
-        }
-    )
+    # Enhanced inventory table
+    st.table(filtered_df)
     
     # Quick actions for selected products
     st.markdown("### ⚡ Quick Actions")
@@ -379,7 +368,7 @@ with tab2:
             })
     
     suppliers_df = pd.DataFrame(suppliers_data)
-    st.dataframe(suppliers_df, use_container_width=True)
+    st.table(suppliers_df)
 
 with tab3:
     st.subheader("📈 Inventory Analytics")
@@ -429,12 +418,12 @@ with tab3:
     with col1:
         st.markdown("### 🔝 Highest Stock Levels")
         top_stock = df.nlargest(5, 'Current Stock')[['Product ID', 'Product Name', 'Current Stock']]
-        st.dataframe(top_stock, use_container_width=True)
+        st.table(top_stock)
     
     with col2:
         st.markdown("### ⚠️ Lowest Stock Levels")
         low_stock = df.nsmallest(5, 'Current Stock')[['Product ID', 'Product Name', 'Current Stock']]
-        st.dataframe(low_stock, use_container_width=True)
+        st.table(low_stock)
 
 with tab4:
     st.subheader("🔄 Bulk Operations")
@@ -452,7 +441,7 @@ with tab4:
                 df_upload = pd.read_excel(uploaded_file)
             
             st.write("Preview of uploaded data:")
-            st.dataframe(df_upload.head())
+            st.table(df_upload.head())
             
             if 'Product ID' in df_upload.columns and 'New Quantity' in df_upload.columns:
                 if st.button("Apply Bulk Updates from File"):

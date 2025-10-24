@@ -182,11 +182,86 @@ def load_products_from_excel():
         return products
 
     except Exception as e:
-        print(f"❌ Error loading products from Excel: {e}")
+        print(f"[ERROR] Error loading products from Excel: {e}")
+        print("[INFO] Will use fallback sample products instead")
         return []
+
+# Create fallback sample data if Excel file is not available
+def create_fallback_products():
+    """Create sample products when Excel file is not available"""
+    return [
+        UserProductModel(
+            product_id="USR001",
+            name="SYSKA Power Bank 10000mAh",
+            category=ProductCategory.POWER_BANK,
+            description="High capacity power bank with fast charging",
+            unit_price=25.99,
+            weight_kg=0.4,
+            dimensions="15 x 7 x 2 cm",
+            supplier_id="SUPPLIER_001",
+            reorder_point=10,
+            max_stock=100,
+            current_qty=25
+        ),
+        UserProductModel(
+            product_id="USR002",
+            name="BOAST Wireless Earbuds",
+            category=ProductCategory.EARBUDS,
+            description="Premium wireless earbuds with noise cancellation",
+            unit_price=15.99,
+            weight_kg=0.1,
+            dimensions="8 x 6 x 3 cm",
+            supplier_id="SUPPLIER_002",
+            reorder_point=15,
+            max_stock=150,
+            current_qty=45
+        ),
+        UserProductModel(
+            product_id="USR003",
+            name="Smart Watch Pro",
+            category=ProductCategory.WATCH,
+            description="Advanced smartwatch with health monitoring",
+            unit_price=45.99,
+            weight_kg=0.2,
+            dimensions="4 x 4 x 1 cm",
+            supplier_id="SUPPLIER_001",
+            reorder_point=8,
+            max_stock=80,
+            current_qty=20
+        ),
+        UserProductModel(
+            product_id="USR004",
+            name="SYSKA Bluetooth Speaker",
+            category=ProductCategory.BLUETOOTH_SPEAKER,
+            description="Portable Bluetooth speaker with premium sound",
+            unit_price=35.99,
+            weight_kg=0.6,
+            dimensions="18 x 8 x 8 cm",
+            supplier_id="SUPPLIER_001",
+            reorder_point=12,
+            max_stock=120,
+            current_qty=30
+        ),
+        UserProductModel(
+            product_id="USR005",
+            name="USB-C Fast Charger",
+            category=ProductCategory.CHARGER,
+            description="Quick charge USB-C adapter with PD support",
+            unit_price=12.99,
+            weight_kg=0.2,
+            dimensions="8 x 6 x 4 cm",
+            supplier_id="SUPPLIER_002",
+            reorder_point=20,
+            max_stock=200,
+            current_qty=75
+        )
+    ]
 
 # Load the product catalog
 USER_PRODUCT_CATALOG = load_products_from_excel()
+if not USER_PRODUCT_CATALOG:
+    print("[INFO] Excel file not found, using fallback sample products")
+    USER_PRODUCT_CATALOG = create_fallback_products()
 
 # Helper functions
 def get_user_product_by_id(product_id: str) -> Optional[UserProductModel]:
@@ -321,7 +396,7 @@ def generate_sample_shipments():
     return shipments
 
 if __name__ == "__main__":
-    print("🏷️  User Product Catalog Summary")
+    print("User Product Catalog Summary")
     print("=" * 60)
     
     if USER_PRODUCT_CATALOG:
@@ -337,27 +412,27 @@ if __name__ == "__main__":
         
         for category, products in categories.items():
             category_qty = sum(p.current_qty for p in products)
-            print(f"\n📦 {category.value}: {len(products)} products, {category_qty} total qty")
+            print(f"\n[CATEGORY] {category.value}: {len(products)} products, {category_qty} total qty")
             for product in products:
                 print(f"   • {product.product_id}: {product.name} (Qty: {product.current_qty})")
         
-        print(f"\n📊 Total Products: {len(USER_PRODUCT_CATALOG)}")
-        print(f"📊 Total Categories: {len(categories)}")
-        print(f"📊 Total Quantity: {total_qty}")
+        print(f"\n[STATS] Total Products: {len(USER_PRODUCT_CATALOG)}")
+        print(f"[STATS] Total Categories: {len(categories)}")
+        print(f"[STATS] Total Quantity: {total_qty}")
         
         # Show low stock products
         low_stock = get_low_stock_user_products()
         if low_stock:
-            print(f"\n⚠️  Low Stock Products ({len(low_stock)}):")
+            print(f"\n[WARNING] Low Stock Products ({len(low_stock)}):")
             for product in low_stock:
                 print(f"   • {product.product_id}: {product.name} (Current: {product.current_qty}, Reorder: {product.reorder_point})")
         
         # Show brand distribution
         syska_products = get_user_products_by_brand('SYSKA')
         boast_products = get_user_products_by_brand('BOAST')
-        print(f"\n🏢 Brand Distribution:")
+        print(f"\n[BRANDS] Brand Distribution:")
         print(f"   • SYSKA: {len(syska_products)} products")
         print(f"   • BOAST: {len(boast_products)} products")
         
     else:
-        print("❌ No products loaded from Excel file")
+        print("[ERROR] No products loaded from Excel file")

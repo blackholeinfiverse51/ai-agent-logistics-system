@@ -126,20 +126,8 @@ with col1:
     if suppliers:
         suppliers_df = pd.DataFrame(suppliers)
         
-        # Display as editable table
-        st.dataframe(
-            suppliers_df,
-            use_container_width=True,
-            column_config={
-                "supplier_id": "Supplier ID",
-                "name": "Name",
-                "contact_email": "Email",
-                "contact_phone": "Phone",
-                "lead_time_days": "Lead Time (days)",
-                "minimum_order": "Min Order",
-                "is_active": "Active"
-            }
-        )
+        # Display suppliers table
+        st.table(suppliers_df)
         
         # Edit existing supplier
         st.subheader("✏️ Edit Supplier")

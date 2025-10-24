@@ -267,7 +267,7 @@ def display_performance_charts(data):
                 })
             
             df_products = pd.DataFrame(product_data)
-            st.dataframe(df_products)
+            st.table(df_products)
             
             # Category distribution
             category_counts = {}
@@ -333,7 +333,7 @@ def display_recent_activity(data):
                 })
             
             df_activity = pd.DataFrame(display_logs)
-            st.dataframe(df_activity)
+            st.table(df_activity)
         else:
             st.info("No recent activity to display")
     
@@ -385,7 +385,7 @@ def display_recent_activity(data):
                     df_filtered = df_products
                 
                 # Display the table
-                st.dataframe(df_filtered)
+                st.table(df_filtered)
                 
                 # Summary statistics
                 col1, col2, col3, col4 = st.columns(4)

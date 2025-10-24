@@ -518,9 +518,9 @@ def show_infiverse_monitoring(data):
                         display_df = tasks_df[available_cols].copy()
                         # Rename columns for better display
                         display_df.columns = [col.title() for col in display_df.columns]
-                        st.dataframe(display_df)
+                        st.table(display_df)
                     else:
-                        st.dataframe(tasks_df)
+                        st.table(tasks_df)
 
                     st.success(f"Showing {len(tasks_list)} tasks from Complete-Infiverse")
                 else:
@@ -545,7 +545,7 @@ def show_infiverse_monitoring(data):
             if status_filter != "All":
                 tasks = tasks[tasks['Status'] == status_filter]
 
-            st.dataframe(tasks)
+            st.table(tasks)
 
         # Task actions
         st.subheader("Task Actions")
@@ -586,7 +586,7 @@ def show_infiverse_monitoring(data):
             'Status': ['Present', 'Present', 'Present', 'Present']
         })
 
-        st.dataframe(attendance)
+        st.table(attendance)
 
         # Attendance summary
         col1, col2, col3 = st.columns(3)
@@ -620,9 +620,9 @@ def show_infiverse_monitoring(data):
                     available_cols = [col for col in display_cols if col in alerts_df.columns]
 
                     if available_cols:
-                        st.dataframe(alerts_df[available_cols])
+                        st.table(alerts_df[available_cols])
                     else:
-                        st.dataframe(alerts_df)
+                        st.table(alerts_df)
 
                     st.success(f"Showing {len(alerts_list)} alerts from Complete-Infiverse")
                 else:
@@ -1330,7 +1330,7 @@ def show_employee_crm_integration(data):
             'Priority': ['High', 'High', 'Medium', 'Medium', 'High']
         })
 
-        st.dataframe(integrated_activities)
+        st.table(integrated_activities)
 
         # Real-time Monitoring Integration
         st.subheader("📈 Real-time Employee Monitoring for CRM")
@@ -1368,7 +1368,7 @@ def show_employee_crm_integration(data):
             'Duration': ['2h', '1.5h', '3h', '45m', '2h', '1h']
         })
 
-        st.dataframe(timeline_data)
+        st.table(timeline_data)
 
         # Integration Actions
         st.subheader("🔧 Integration Actions")
@@ -1470,38 +1470,38 @@ def show_nlp_query_simple(data):
                 # Fall back to simple pattern matching
                 if "opportunity" in query.lower() or "opportunities" in query.lower():
                     st.subheader("📈 Opportunities Found")
-                    st.dataframe(data['opportunities'])
+                    st.table(data['opportunities'])
 
                 elif "lead" in query.lower() or "leads" in query.lower():
                     st.subheader("🎯 Leads Found")
-                    st.dataframe(data['leads'])
+                    st.table(data['leads'])
 
                 elif "account" in query.lower() or "accounts" in query.lower():
                     st.subheader("🏢 Accounts Found")
-                    st.dataframe(data['accounts'])
+                    st.table(data['accounts'])
 
                 elif "activity" in query.lower() or "activities" in query.lower():
                     st.subheader("📅 Activities Found")
-                    st.dataframe(data['activities'])
+                    st.table(data['activities'])
         
         except ImportError:
             st.warning("LLM integration not available. Using pattern matching instead.")
             # Simple mock responses based on keywords
             if "opportunity" in query.lower() or "opportunities" in query.lower():
                 st.subheader("📈 Opportunities Found")
-                st.dataframe(data['opportunities'], use_container_width=True)
+                st.table(data['opportunities'])
             
             elif "lead" in query.lower() or "leads" in query.lower():
                 st.subheader("🎯 Leads Found")
-                st.dataframe(data['leads'], use_container_width=True)
+                st.table(data['leads'])
             
             elif "account" in query.lower() or "accounts" in query.lower():
                 st.subheader("🏢 Accounts Found")
-                st.dataframe(data['accounts'], use_container_width=True)
+                st.table(data['accounts'])
             
             elif "activity" in query.lower() or "activities" in query.lower():
                 st.subheader("📅 Activities Found")
-                st.dataframe(data['activities'], use_container_width=True)
+                st.table(data['activities'])
             
             else:
                 st.warning("I'm still learning! Try asking about opportunities, leads, accounts, or activities.")
@@ -1512,13 +1512,13 @@ def show_nlp_query_simple(data):
             
             # Simple pattern matching fallback
             if "opportunity" in query.lower():
-                st.dataframe(data['opportunities'])
+                st.table(data['opportunities'])
             elif "lead" in query.lower():
-                st.dataframe(data['leads'])
+                st.table(data['leads'])
             elif "account" in query.lower():
-                st.dataframe(data['accounts'])
+                st.table(data['accounts'])
             elif "activity" in query.lower():
-                st.dataframe(data['activities'])
+                st.table(data['activities'])
     
     # Sample queries and configuration section
     st.markdown("---")

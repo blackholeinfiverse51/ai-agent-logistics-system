@@ -278,7 +278,7 @@ def display_performance_charts(data):
                 })
             
             df_products = pd.DataFrame(product_data)
-            st.dataframe(df_products, use_container_width=True)
+            st.table(df_products)
     except ImportError:
         st.info("Product catalog not available")
 
@@ -308,7 +308,7 @@ def display_recent_activity(data):
                 })
             
             df_activity = pd.DataFrame(display_logs)
-            st.dataframe(df_activity, use_container_width=True)
+            st.table(df_activity)
         else:
             st.info("No recent activity to display")
     
@@ -348,7 +348,7 @@ def display_recent_activity(data):
                 else:
                     df_filtered = df_products
                 
-                st.dataframe(df_filtered, use_container_width=True)
+                st.table(df_filtered)
                 
         except ImportError:
             st.error("Unable to load product catalog")
