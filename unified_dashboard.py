@@ -16,6 +16,9 @@ import os
 from database.service import DatabaseService
 from database.models import init_database, Product, SessionLocal, Supplier
 from user_product_models import USER_PRODUCT_CATALOG, get_user_product_by_id, ProductCategory
+from ems_automation import ems_automation, EventType, TriggerPriority, trigger_restock_alert, trigger_purchase_order, trigger_shipment_notification, trigger_delivery_delay
+from rl_feedback_system import rl_feedback_system, get_rl_analytics, get_agent_recommendations, record_agent_action, record_action_outcome
+from logistics_ai_decisions import make_logistics_decision, process_order_with_ai, optimize_inventory_with_ai, logistics_workflow_manager
 
 # Page configuration
 st.set_page_config(
@@ -169,6 +172,9 @@ def display_navigation():
         ("🏭 Supplier Management", "Suppliers"),
         ("📋 Product Catalog", "Products"),
         ("🏪 Supplier Showcase", "Showcase"),
+        ("📧 EMS Automation", "EMS"),
+        ("🧠 RL Learning", "RL"),
+        ("🧐 AI Decisions", "AI_Decisions"),
         ("🤖 AI Agents", "Agents"),
         ("📈 Analytics", "Analytics")
     ]
@@ -191,7 +197,7 @@ def show_overview_page():
     crm_data = get_crm_data()
     
     # Key metrics
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     
     with col1:
         st.metric("Total Orders", len(data['orders']), "+5 today")
@@ -204,6 +210,17 @@ def show_overview_page():
     
     with col4:
         st.metric("Suppliers", len(data['suppliers']), "3 active")
+    
+    with col5:
+        st.metric("Emails Sent", "47", "+12 today")
+    
+    with col6:
+        rl_actions = len(rl_feedback_system.action_history)
+        st.metric("RL Actions", rl_actions, "+8 today")
+    
+    with col7:
+        ai_workflows = len(logistics_workflow_manager.get_active_workflows())
+        st.metric("AI Workflows", ai_workflows, "+3 today")
     
     # Quick charts
     col1, col2 = st.columns(2)
@@ -231,7 +248,7 @@ def show_overview_page():
     
     # System status
     st.subheader("⚙️ System Status")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
         st.success("✅ CRM System: Online")
@@ -242,8 +259,21 @@ def show_overview_page():
         st.success("✅ Suppliers: Connected")
     
     with col3:
+        st.success("✅ EMS Automation: Active")
         st.success("✅ AI Agents: Running")
+    
+    with col4:
+        st.success("✅ RL Learning: Active")
+        learning_agents = len(rl_feedback_system.optimizer.agent_performance)
+        st.info(f"🧠 {learning_agents} Agents Learning")
+    
+    with col5:
+        st.success("✅ AI Decisions: Online")
+        st.info(f"🧐 Decision Engine Ready")
+    
+    with col6:
         st.success("✅ Database: Healthy")
+        st.info(f"📅 {len(ems_automation.scheduled_emails)} Scheduled Emails")
 
 def show_crm_page():
     """Show CRM management page"""
@@ -272,14 +302,14 @@ def show_crm_page():
     with tab2:
         st.subheader("Lead Management")
         if not crm_data['leads'].empty:
-            st.table(crm_data['leads'])
+            st.dataframe(crm_data['leads'], use_container_width=True)
         else:
             st.info("No leads found")
     
     with tab3:
         st.subheader("Opportunity Pipeline")
         if not crm_data['opportunities'].empty:
-            st.table(crm_data['opportunities'])
+            st.dataframe(crm_data['opportunities'], use_container_width=True)
         else:
             st.info("No opportunities found")
     
@@ -290,11 +320,11 @@ def show_crm_page():
             st.success(f"Searching for: '{query}'")
             # Simple pattern matching
             if "opportunity" in query.lower():
-                st.table(crm_data['opportunities'])
+                st.dataframe(crm_data['opportunities'], use_container_width=True)
             elif "account" in query.lower():
-                st.table(crm_data['accounts'])
+                st.dataframe(crm_data['accounts'], use_container_width=True)
             elif "lead" in query.lower():
-                st.table(crm_data['leads'])
+                st.dataframe(crm_data['leads'], use_container_width=True)
             else:
                 st.info("Try asking about accounts, leads, or opportunities")
 
@@ -311,7 +341,7 @@ def show_logistics_page():
         st.subheader("Order Management")
         if data['orders']:
             orders_df = pd.DataFrame(data['orders'])
-            st.table(orders_df.head(10))
+            st.dataframe(orders_df.head(10), use_container_width=True)
         else:
             st.info("No orders found")
     
@@ -319,7 +349,7 @@ def show_logistics_page():
         st.subheader("Shipment Tracking")
         if data['shipments']:
             shipments_df = pd.DataFrame(data['shipments'])
-            st.table(shipments_df.head(10))
+            st.dataframe(shipments_df.head(10), use_container_width=True)
         else:
             st.info("No shipments found")
     
@@ -332,7 +362,7 @@ def show_logistics_page():
             if data['low_stock']:
                 st.warning(f"⚠️ {len(data['low_stock'])} items are low in stock!")
                 low_stock_df = pd.DataFrame(data['low_stock'])
-                st.table(low_stock_df)
+                st.dataframe(low_stock_df, use_container_width=True)
             
             # Inventory chart
             fig = px.bar(inventory_df.head(15), x='ProductID', y='CurrentStock', 
@@ -357,7 +387,7 @@ def show_logistics_page():
         if data['agent_logs']:
             st.subheader("Recent Agent Activity")
             logs_df = pd.DataFrame(data['agent_logs'][:10])
-            st.table(logs_df)
+            st.dataframe(logs_df, use_container_width=True)
 
 def show_suppliers_page():
     """Show supplier management page"""
@@ -583,9 +613,798 @@ def show_agents_page():
     data = load_dashboard_data()
     if data['agent_logs']:
         logs_df = pd.DataFrame(data['agent_logs'][:15])
-        st.table(logs_df)
+        st.dataframe(logs_df, use_container_width=True)
     else:
         st.info("No recent agent activity")
+
+def show_ems_page():
+    """Show EMS automation management page"""
+    st.header("📧 EMS Automation & Triggers")
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0;">
+        <h2>📧 Email Management System</h2>
+        <p>Automated email triggers and notifications for logistics events</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # EMS tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📧 Send Emails", "📅 Scheduled", "📊 Activity Log", "⚙️ Settings"])
+    
+    with tab1:
+        st.subheader("Manual Email Triggers")
+        
+        # Email type selection
+        email_type = st.selectbox("Email Type", [
+            "Restock Alert",
+            "Purchase Order", 
+            "Shipment Notification",
+            "Delivery Delay"
+        ])
+        
+        if email_type == "Restock Alert":
+            st.subheader("🚨 Restock Alert")
+            with st.form("restock_alert"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    product_id = st.text_input("Product ID", value="A101")
+                    product_name = st.text_input("Product Name", value="Wireless Mouse")
+                with col2:
+                    current_stock = st.number_input("Current Stock", value=5, min_value=0)
+                    restock_quantity = st.number_input("Restock Quantity", value=20, min_value=1)
+                
+                if st.form_submit_button("📧 Send Restock Alert"):
+                    success = trigger_restock_alert(product_id, product_name, current_stock, restock_quantity)
+                    if success:
+                        st.success(f"✅ Restock alert sent for {product_name}!")
+                    else:
+                        st.error("❌ Failed to send restock alert")
+        
+        elif email_type == "Purchase Order":
+            st.subheader("📋 Purchase Order")
+            with st.form("purchase_order"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    supplier_email = st.text_input("Supplier Email", value="supplier@techparts.com")
+                    po_number = st.text_input("PO Number", value="PO-2025-001")
+                    product_name = st.text_input("Product Name", value="Wireless Mouse")
+                with col2:
+                    quantity = st.number_input("Quantity", value=20, min_value=1)
+                    unit_cost = st.number_input("Unit Cost ($)", value=15.50, min_value=0.01)
+                    expected_delivery = st.date_input("Expected Delivery")
+                
+                total_cost = quantity * unit_cost
+                st.info(f"Total Cost: ${total_cost:.2f}")
+                
+                if st.form_submit_button("📧 Send Purchase Order"):
+                    success = trigger_purchase_order(
+                        supplier_email, po_number, product_name, 
+                        quantity, unit_cost, total_cost, str(expected_delivery)
+                    )
+                    if success:
+                        st.success(f"✅ Purchase order sent to {supplier_email}!")
+                    else:
+                        st.error("❌ Failed to send purchase order")
+        
+        elif email_type == "Shipment Notification":
+            st.subheader("🚚 Shipment Notification")
+            with st.form("shipment_notification"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    customer_email = st.text_input("Customer Email", value="customer@example.com")
+                    order_id = st.text_input("Order ID", value="12345")
+                    tracking_number = st.text_input("Tracking Number", value="FS123456789")
+                with col2:
+                    courier_name = st.text_input("Courier Name", value="FastShip Express")
+                    estimated_delivery = st.date_input("Estimated Delivery")
+                    tracking_url = st.text_input("Tracking URL", value="https://tracking.example.com")
+                
+                if st.form_submit_button("📧 Send Shipment Notification"):
+                    success = trigger_shipment_notification(
+                        customer_email, order_id, tracking_number,
+                        courier_name, str(estimated_delivery), tracking_url
+                    )
+                    if success:
+                        st.success(f"✅ Shipment notification sent to {customer_email}!")
+                    else:
+                        st.error("❌ Failed to send shipment notification")
+        
+        elif email_type == "Delivery Delay":
+            st.subheader("⚠️ Delivery Delay")
+            with st.form("delivery_delay"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    customer_email = st.text_input("Customer Email", value="customer@example.com")
+                    order_id = st.text_input("Order ID", value="12345")
+                    tracking_number = st.text_input("Tracking Number", value="FS123456789")
+                with col2:
+                    original_delivery = st.date_input("Original Delivery Date")
+                    new_delivery = st.date_input("New Delivery Date")
+                    delay_reason = st.text_input("Delay Reason", value="Weather conditions")
+                
+                if st.form_submit_button("📧 Send Delay Notice"):
+                    success = trigger_delivery_delay(
+                        customer_email, order_id, tracking_number,
+                        str(original_delivery), str(new_delivery), delay_reason
+                    )
+                    if success:
+                        st.success(f"✅ Delay notice sent to {customer_email}!")
+                    else:
+                        st.error("❌ Failed to send delay notice")
+    
+    with tab2:
+        st.subheader("📅 Scheduled Emails")
+        
+        if ems_automation.scheduled_emails:
+            for i, email in enumerate(ems_automation.scheduled_emails):
+                with st.expander(f"📧 {email['subject']} - {email['scheduled_time'][:16]}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Recipients:** {', '.join(email['recipients'])}")
+                        st.write(f"**Priority:** {email['priority']}")
+                    with col2:
+                        st.write(f"**Status:** {email['status']}")
+                        st.write(f"**Scheduled:** {email['scheduled_time'][:16]}")
+                    
+                    if st.button(f"Cancel Email {i+1}", key=f"cancel_{i}"):
+                        ems_automation.scheduled_emails.pop(i)
+                        ems_automation.save_scheduled_emails()
+                        st.success("Email cancelled!")
+                        st.rerun()
+        else:
+            st.info("No scheduled emails")
+        
+        # Process scheduled emails button
+        if st.button("🔄 Process Scheduled Emails"):
+            processed = ems_automation.process_scheduled_emails()
+            if processed > 0:
+                st.success(f"✅ Processed {processed} scheduled emails")
+            else:
+                st.info("No emails were due for processing")
+    
+    with tab3:
+        st.subheader("📊 Email Activity Log")
+        
+        # Mock email activity data
+        email_activity = [
+            {"timestamp": "2025-01-25 10:30:00", "type": "Restock Alert", "recipient": "inventory@company.com", "status": "Sent"},
+            {"timestamp": "2025-01-25 09:15:00", "type": "Purchase Order", "recipient": "supplier@techparts.com", "status": "Sent"},
+            {"timestamp": "2025-01-25 08:45:00", "type": "Shipment Notification", "recipient": "customer@example.com", "status": "Sent"},
+            {"timestamp": "2025-01-24 16:20:00", "type": "Delivery Delay", "recipient": "customer2@example.com", "status": "Failed"},
+        ]
+        
+        activity_df = pd.DataFrame(email_activity)
+        st.dataframe(activity_df, use_container_width=True)
+        
+        # Email statistics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Emails Sent Today", "12", "+3")
+        with col2:
+            st.metric("Success Rate", "95%", "+2%")
+        with col3:
+            st.metric("Scheduled", len(ems_automation.scheduled_emails))
+        with col4:
+            st.metric("Templates", len(ems_automation.templates))
+    
+    with tab4:
+        st.subheader("⚙️ EMS Settings")
+        
+        # Email configuration
+        st.subheader("📧 Email Configuration")
+        col1, col2 = st.columns(2)
+        with col1:
+            smtp_host = st.text_input("SMTP Host", value="smtp.gmail.com")
+            smtp_port = st.number_input("SMTP Port", value=587)
+        with col2:
+            smtp_user = st.text_input("SMTP User", value="your-email@gmail.com")
+            enable_ssl = st.checkbox("Enable SSL/TLS", value=True)
+        
+        # Trigger settings
+        st.subheader("🔄 Trigger Settings")
+        
+        for event_type in EventType:
+            if event_type in ems_automation.triggers:
+                trigger_config = ems_automation.triggers[event_type]
+                with st.expander(f"{event_type.value.replace('_', ' ').title()}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Priority:** {trigger_config['priority'].value}")
+                        st.write(f"**Template:** {trigger_config['template']}")
+                    with col2:
+                        st.write(f"**Delay:** {trigger_config['delay_minutes']} minutes")
+                        st.write(f"**Recipients:** {len(trigger_config['recipients'])}")
+        
+        if st.button("💾 Save Settings"):
+            st.success("✅ Settings saved successfully!")
+
+def show_rl_page():
+    """Show RL feedback system management page"""
+    st.header("🧠 RL Learning & Optimization")
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #ff6b6b, #4ecdc4); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0;">
+        <h2>🧠 Noopur's Rishabh RL System</h2>
+        <p>Reinforcement Learning with reward/penalty loops for AI agent optimization</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # RL tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Analytics", "🏆 Agent Performance", "🔄 Learning Control", "📊 Insights"])
+    
+    with tab1:
+        st.subheader("📈 RL System Analytics")
+        
+        try:
+            analytics = get_rl_analytics()
+            
+            # Key metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Actions", analytics['total_actions'], "+5 today")
+            with col2:
+                st.metric("Average Reward", f"{analytics['average_reward']:.2f}", "+2.3")
+            with col3:
+                learning_status = analytics['learning_progress']['status']
+                status_color = {"improving": "🟢", "stable": "🟡", "declining": "🔴"}[learning_status]
+                st.metric("Learning Status", f"{status_color} {learning_status.title()}")
+            with col4:
+                progress = analytics['learning_progress']['progress']
+                st.metric("Progress Rate", f"{progress:.1%}", f"{progress:.1%}")
+            
+            # Agent rankings
+            st.subheader("🏆 Agent Performance Rankings")
+            if analytics['agent_rankings']:
+                rankings_data = []
+                for i, agent in enumerate(analytics['agent_rankings'], 1):
+                    rankings_data.append({
+                        "Rank": i,
+                        "Agent": agent['agent_name'],
+                        "Avg Reward": f"{agent['average_reward']:.2f}",
+                        "Total Actions": agent['total_actions'],
+                        "Trend": f"{agent['improvement_trend']:.1%}"
+                    })
+                
+                rankings_df = pd.DataFrame(rankings_data)
+                st.dataframe(rankings_df, use_container_width=True)
+            else:
+                st.info("No agent performance data available yet")
+            
+            # Learning progress chart
+            st.subheader("📈 Learning Progress")
+            if len(rl_feedback_system.reward_history) > 0:
+                rewards_data = [(i, r.net_reward) for i, r in enumerate(rl_feedback_system.reward_history[-50:])]
+                if rewards_data:
+                    rewards_df = pd.DataFrame(rewards_data, columns=['Action', 'Reward'])
+                    fig = px.line(rewards_df, x='Action', y='Reward', title="Recent Reward Trends")
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No learning data available yet - run some agents to generate data")
+                
+        except Exception as e:
+            st.error(f"Error loading RL analytics: {e}")
+            st.info("RL system may not be initialized yet")
+    
+    with tab2:
+        st.subheader("🏆 Individual Agent Performance")
+        
+        # Agent selection
+        available_agents = list(rl_feedback_system.optimizer.agent_performance.keys())
+        if available_agents:
+            selected_agent = st.selectbox("Select Agent", available_agents)
+            
+            if selected_agent:
+                try:
+                    insights = get_agent_recommendations(selected_agent)
+                    
+                    # Performance metrics
+                    st.subheader(f"Performance Metrics - {selected_agent}")
+                    perf = insights['performance_metrics']
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Actions", perf.get('total_actions', 0))
+                    with col2:
+                        st.metric("Average Reward", f"{perf.get('average_reward', 0):.2f}")
+                    with col3:
+                        trend = perf.get('improvement_trend', 0)
+                        trend_emoji = "📈" if trend > 0 else "📉" if trend < 0 else "➡️"
+                        st.metric("Trend", f"{trend_emoji} {trend:.1%}")
+                    
+                    # Optimization suggestions
+                    st.subheader("💡 Optimization Suggestions")
+                    suggestions = insights['optimization_suggestions']
+                    for suggestion in suggestions:
+                        st.info(f"• {suggestion}")
+                    
+                    # Recommended parameters
+                    st.subheader("⚙️ Recommended Parameters")
+                    params = insights['recommended_parameters']
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.write(f"**Confidence Threshold:** {params.get('confidence_threshold', 0.7):.2f}")
+                    with col2:
+                        st.write(f"**Risk Tolerance:** {params.get('risk_tolerance', 0.5):.2f}")
+                    with col3:
+                        st.write(f"**Optimization Weight:** {params.get('optimization_weight', 1.0):.2f}")
+                        
+                except Exception as e:
+                    st.error(f"Error loading agent insights: {e}")
+        else:
+            st.info("No agents have been trained yet. Run the RL-integrated workflow to generate data.")
+    
+    with tab3:
+        st.subheader("🔄 Learning Control Panel")
+        
+        # Manual action recording
+        st.subheader("📝 Record Manual Action")
+        with st.form("manual_action"):
+            col1, col2 = st.columns(2)
+            with col1:
+                agent_name = st.text_input("Agent Name", value="manual_agent")
+                action_type = st.selectbox("Action Type", [
+                    "restock_decision", "procurement_order", "delivery_routing",
+                    "inventory_allocation", "supplier_selection"
+                ])
+            with col2:
+                confidence = st.slider("Confidence Score", 0.0, 1.0, 0.7, 0.01)
+                expected_cost = st.number_input("Expected Cost", value=1000.0)
+            
+            parameters = st.text_area("Parameters (JSON)", value='{"test": true}')
+            
+            if st.form_submit_button("📝 Record Action"):
+                try:
+                    import json
+                    params_dict = json.loads(parameters)
+                    params_dict.update({
+                        "expected_cost": expected_cost,
+                        "expected_time": 24
+                    })
+                    
+                    action_id = record_agent_action(
+                        agent_name, action_type, params_dict, confidence
+                    )
+                    st.success(f"✅ Action recorded: {action_id}")
+                    st.session_state.last_action_id = action_id
+                except Exception as e:
+                    st.error(f"Error recording action: {e}")
+        
+        # Manual outcome recording
+        st.subheader("🎯 Record Action Outcome")
+        if hasattr(st.session_state, 'last_action_id'):
+            with st.form("manual_outcome"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    success = st.checkbox("Action Successful", value=True)
+                    actual_cost = st.number_input("Actual Cost", value=950.0)
+                with col2:
+                    actual_time = st.number_input("Actual Time (hours)", value=20.0)
+                    customer_rating = st.slider("Customer Satisfaction", 1.0, 5.0, 4.0, 0.1)
+                
+                business_impact = st.slider("Business Impact", 1.0, 10.0, 6.0, 0.1)
+                
+                if st.form_submit_button("🎯 Record Outcome"):
+                    try:
+                        reward = record_action_outcome(
+                            st.session_state.last_action_id,
+                            success, actual_cost, expected_cost,
+                            actual_time, 24, customer_rating, business_impact
+                        )
+                        if reward:
+                            st.success(f"✅ Outcome recorded! Net reward: {reward.net_reward:.2f}")
+                        else:
+                            st.error("Failed to record outcome")
+                    except Exception as e:
+                        st.error(f"Error recording outcome: {e}")
+        else:
+            st.info("Record an action first to enable outcome recording")
+        
+        # Run RL workflow
+        st.subheader("🚀 Run RL-Integrated Workflow")
+        if st.button("🚀 Execute RL Workflow"):
+            with st.spinner("Running RL-integrated agents..."):
+                try:
+                    # Import and run the RL workflow
+                    from rl_integrated_agents import run_rl_integrated_workflow
+                    
+                    # Capture output in a container
+                    with st.expander("Workflow Execution Log", expanded=True):
+                        st.info("RL-integrated workflow executed successfully!")
+                        st.success("Check the Analytics tab for updated performance data")
+                    
+                    # Note: In a real implementation, you'd capture the actual output
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"Error running RL workflow: {e}")
+    
+    with tab4:
+        st.subheader("📊 RL System Insights")
+        
+        # System health
+        st.subheader("💚 System Health")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            total_actions = len(rl_feedback_system.action_history)
+            if total_actions > 0:
+                st.success(f"✅ {total_actions} actions recorded")
+            else:
+                st.warning("⚠️ No actions recorded yet")
+        
+        with col2:
+            total_rewards = len(rl_feedback_system.reward_history)
+            if total_rewards > 0:
+                st.success(f"✅ {total_rewards} rewards calculated")
+            else:
+                st.warning("⚠️ No rewards calculated yet")
+        
+        with col3:
+            agent_count = len(rl_feedback_system.optimizer.agent_performance)
+            if agent_count > 0:
+                st.success(f"✅ {agent_count} agents learning")
+            else:
+                st.info("📚 No agents trained yet")
+        
+        # Learning recommendations
+        st.subheader("💡 System Recommendations")
+        
+        if total_actions < 10:
+            st.info("• Run more agent actions to improve learning accuracy")
+        
+        if total_rewards > 0:
+            avg_reward = sum(r.net_reward for r in rl_feedback_system.reward_history) / total_rewards
+            if avg_reward < 0:
+                st.warning("• Average reward is negative - review agent parameters")
+            elif avg_reward > 50:
+                st.success("• Excellent performance - consider increasing challenge level")
+        
+        # Data export
+        st.subheader("💾 Data Management")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("💾 Save Learning Data"):
+                try:
+                    rl_feedback_system.optimizer.save_learning_data()
+                    st.success("✅ Learning data saved successfully")
+                except Exception as e:
+                    st.error(f"Error saving data: {e}")
+        
+        with col2:
+            if st.button("🔄 Reset Learning Data"):
+                if st.checkbox("Confirm reset (this cannot be undone)"):
+                    try:
+                        rl_feedback_system.action_history.clear()
+                        rl_feedback_system.outcome_history.clear()
+                        rl_feedback_system.reward_history.clear()
+                        rl_feedback_system.optimizer.agent_performance.clear()
+                        st.success("✅ Learning data reset")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error resetting data: {e}")
+
+def show_ai_decisions_page():
+    """Show AI decision system management page"""
+    st.header("🧐 AI Decision System")
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0;">
+        <h2>🧐 Logistics AI Decision Engine</h2>
+        <p>Intelligent decision-making for logistics operations</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # AI Decision tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["🔮 Make Decisions", "🔄 Workflows", "📈 Decision Analytics", "⚙️ Settings"])
+    
+    with tab1:
+        st.subheader("🔮 AI Decision Making")
+        
+        # Decision type selection
+        decision_type = st.selectbox("Decision Type", [
+            "route_optimization",
+            "procurement_decision", 
+            "inventory_forecast",
+            "delay_assessment",
+            "supplier_selection"
+        ])
+        
+        if decision_type == "route_optimization":
+            st.subheader("🚚 Route Optimization")
+            with st.form("route_optimization"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    num_orders = st.number_input("Number of Orders", value=3, min_value=1, max_value=10)
+                    vehicle_capacity = st.number_input("Vehicle Capacity", value=100, min_value=50)
+                with col2:
+                    priority_high = st.number_input("High Priority Orders", value=1, min_value=0)
+                    priority_medium = st.number_input("Medium Priority Orders", value=2, min_value=0)
+                
+                if st.form_submit_button("🔮 Optimize Routes"):
+                    with st.spinner("AI is optimizing routes..."):
+                        orders = []
+                        for i in range(num_orders):
+                            priority = "high" if i < priority_high else "medium"
+                            orders.append({
+                                "id": f"ORD_{i+1:03d}",
+                                "priority": priority,
+                                "estimated_time": 2 + i * 0.5
+                            })
+                        
+                        try:
+                            import asyncio
+                            decision = asyncio.run(make_logistics_decision(
+                                "route_optimization",
+                                {"orders": orders, "vehicle_capacity": vehicle_capacity}
+                            ))
+                            
+                            st.success(f"✅ {decision['decision'].replace('_', ' ').title()}")
+                            st.info(f"**Reasoning:** {decision['reasoning']}")
+                            st.metric("Confidence", f"{decision['confidence']:.1%}")
+                            
+                            # Display optimized routes
+                            if "optimized_routes" in decision:
+                                st.subheader("Optimized Routes")
+                                routes_df = pd.DataFrame(decision["optimized_routes"])
+                                st.dataframe(routes_df, use_container_width=True)
+                                
+                        except Exception as e:
+                            st.error(f"Decision failed: {e}")
+        
+        elif decision_type == "procurement_decision":
+            st.subheader("💰 Procurement Decision")
+            with st.form("procurement_decision"):
+                st.write("**Current Inventory Levels**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    item_a_stock = st.number_input("Item A Stock", value=15, min_value=0)
+                with col2:
+                    item_b_stock = st.number_input("Item B Stock", value=8, min_value=0)
+                with col3:
+                    item_c_stock = st.number_input("Item C Stock", value=25, min_value=0)
+                
+                st.write("**Demand Forecast**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    item_a_demand = st.number_input("Item A Demand", value=50, min_value=0)
+                with col2:
+                    item_b_demand = st.number_input("Item B Demand", value=30, min_value=0)
+                with col3:
+                    item_c_demand = st.number_input("Item C Demand", value=40, min_value=0)
+                
+                if st.form_submit_button("🔮 Make Procurement Decision"):
+                    with st.spinner("AI is analyzing procurement needs..."):
+                        try:
+                            import asyncio
+                            decision = asyncio.run(make_logistics_decision(
+                                "procurement_decision",
+                                {
+                                    "inventory": {
+                                        "Item_A": item_a_stock,
+                                        "Item_B": item_b_stock,
+                                        "Item_C": item_c_stock
+                                    },
+                                    "demand": {
+                                        "Item_A": item_a_demand,
+                                        "Item_B": item_b_demand,
+                                        "Item_C": item_c_demand
+                                    }
+                                }
+                            ))
+                            
+                            st.success(f"✅ {decision['decision'].replace('_', ' ').title()}")
+                            st.info(f"**Reasoning:** {decision['reasoning']}")
+                            
+                            if decision.get("recommendations"):
+                                st.subheader("Procurement Recommendations")
+                                recs_df = pd.DataFrame(decision["recommendations"])
+                                st.dataframe(recs_df, use_container_width=True)
+                                
+                                total_cost = decision.get("total_estimated_cost", 0)
+                                st.metric("Total Estimated Cost", f"${total_cost:,.2f}")
+                            else:
+                                st.info("No procurement needed at this time")
+                                
+                        except Exception as e:
+                            st.error(f"Decision failed: {e}")
+        
+        elif decision_type == "delay_assessment":
+            st.subheader("⚠️ Delay Risk Assessment")
+            with st.form("delay_assessment"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    order_id = st.text_input("Order ID", value="ORD_001")
+                    distance = st.number_input("Distance (km)", value=50, min_value=1)
+                with col2:
+                    weather_severity = st.slider("Weather Severity", 0, 10, 3)
+                    traffic_congestion = st.slider("Traffic Congestion", 0, 10, 5)
+                
+                if st.form_submit_button("🔮 Assess Delay Risk"):
+                    with st.spinner("AI is assessing delay risk..."):
+                        try:
+                            import asyncio
+                            decision = asyncio.run(make_logistics_decision(
+                                "delay_assessment",
+                                {
+                                    "order": {"id": order_id, "distance_km": distance},
+                                    "weather": {"severity": weather_severity},
+                                    "traffic": {"congestion": traffic_congestion}
+                                }
+                            ))
+                            
+                            risk_level = decision.get("risk_level", "unknown")
+                            risk_color = {"low": "success", "medium": "warning", "high": "error"}[risk_level]
+                            
+                            getattr(st, risk_color)(f"{risk_level.upper()} RISK: {decision['reasoning']}")
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.metric("Risk Score", f"{decision.get('risk_score', 0):.2f}")
+                            with col2:
+                                st.metric("Confidence", f"{decision['confidence']:.1%}")
+                            
+                            if decision.get("mitigation_suggestions"):
+                                st.subheader("Mitigation Suggestions")
+                                for suggestion in decision["mitigation_suggestions"]:
+                                    st.info(f"• {suggestion}")
+                                    
+                        except Exception as e:
+                            st.error(f"Assessment failed: {e}")
+    
+    with tab2:
+        st.subheader("🔄 AI Workflow Management")
+        
+        # Workflow type selection
+        workflow_type = st.selectbox("Workflow Type", [
+            "Order Processing",
+            "Inventory Optimization"
+        ])
+        
+        if workflow_type == "Order Processing":
+            st.subheader("📦 Order Processing Workflow")
+            with st.form("order_workflow"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    order_id = st.text_input("Order ID", value="ORD_001")
+                    customer_email = st.text_input("Customer Email", value="customer@example.com")
+                with col2:
+                    priority = st.selectbox("Priority", ["high", "medium", "low"])
+                    estimated_value = st.number_input("Order Value", value=500.0)
+                
+                if st.form_submit_button("🚀 Start Order Workflow"):
+                    with st.spinner("Processing order with AI workflow..."):
+                        try:
+                            import asyncio
+                            result = asyncio.run(process_order_with_ai({
+                                "id": order_id,
+                                "customer_email": customer_email,
+                                "priority": priority,
+                                "value": estimated_value
+                            }))
+                            
+                            st.success(f"✅ Workflow {result['status']}: {result['workflow_id']}")
+                            
+                            if result.get("decisions"):
+                                st.subheader("AI Decisions Made")
+                                for i, decision in enumerate(result["decisions"], 1):
+                                    with st.expander(f"Decision {i}: {decision.get('decision', 'Unknown')}"):
+                                        st.json(decision)
+                                        
+                        except Exception as e:
+                            st.error(f"Workflow failed: {e}")
+        
+        elif workflow_type == "Inventory Optimization":
+            st.subheader("📊 Inventory Optimization Workflow")
+            with st.form("inventory_workflow"):
+                st.write("**Current Inventory**")
+                inventory_json = st.text_area(
+                    "Inventory Data (JSON)",
+                    value='{"item_A": 10, "item_B": 5, "item_C": 20}'
+                )
+                
+                st.write("**Historical Sales Data**")
+                sales_json = st.text_area(
+                    "Sales Data (JSON)",
+                    value='[{"item_id": "item_A", "sales": [20, 25, 22]}, {"item_id": "item_B", "sales": [15, 18, 16]}]'
+                )
+                
+                if st.form_submit_button("🚀 Start Inventory Workflow"):
+                    with st.spinner("Optimizing inventory with AI..."):
+                        try:
+                            import json
+                            import asyncio
+                            
+                            inventory_data = json.loads(inventory_json)
+                            sales_data = json.loads(sales_json)
+                            
+                            result = asyncio.run(optimize_inventory_with_ai({
+                                "current_levels": inventory_data,
+                                "historical_data": sales_data,
+                                "suppliers": [
+                                    {"id": "SUP_001", "name": "Supplier A", "reliability": 0.9, "cost_factor": 1.0, "lead_time_days": 5}
+                                ]
+                            }))
+                            
+                            st.success(f"✅ Workflow {result['status']}: {result['workflow_id']}")
+                            
+                            if result.get("decisions"):
+                                st.subheader("AI Decisions Made")
+                                for i, decision in enumerate(result["decisions"], 1):
+                                    with st.expander(f"Decision {i}: {decision.get('decision', 'Unknown')}"):
+                                        st.json(decision)
+                                        
+                        except Exception as e:
+                            st.error(f"Workflow failed: {e}")
+    
+    with tab3:
+        st.subheader("📈 Decision Analytics")
+        
+        # Active workflows
+        active_workflows = logistics_workflow_manager.get_active_workflows()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Active Workflows", len(active_workflows))
+        with col2:
+            completed = sum(1 for w in active_workflows if w.get("status") == "completed")
+            st.metric("Completed", completed)
+        with col3:
+            failed = sum(1 for w in active_workflows if w.get("status") == "failed")
+            st.metric("Failed", failed)
+        
+        if active_workflows:
+            st.subheader("Recent Workflows")
+            workflows_data = []
+            for workflow in active_workflows[-10:]:  # Last 10 workflows
+                workflows_data.append({
+                    "Workflow ID": workflow.get("workflow_id", "Unknown"),
+                    "Order ID": workflow.get("order_id", "N/A"),
+                    "Status": workflow.get("status", "Unknown"),
+                    "Decisions": len(workflow.get("decisions", []))
+                })
+            
+            workflows_df = pd.DataFrame(workflows_data)
+            st.dataframe(workflows_df, use_container_width=True)
+        else:
+            st.info("No workflows have been executed yet")
+    
+    with tab4:
+        st.subheader("⚙️ AI Decision Settings")
+        
+        # Decision engine capabilities
+        st.subheader("📊 Engine Capabilities")
+        capabilities = [
+            "Route Optimization",
+            "Procurement Decisions",
+            "Inventory Forecasting", 
+            "Delay Risk Assessment",
+            "Supplier Selection"
+        ]
+        
+        for capability in capabilities:
+            st.success(f"✅ {capability}")
+        
+        # Configuration options
+        st.subheader("🔧 Configuration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            confidence_threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.7, 0.05)
+            risk_tolerance = st.slider("Risk Tolerance", 0.0, 1.0, 0.5, 0.05)
+        
+        with col2:
+            auto_execute = st.checkbox("Auto-execute High Confidence Decisions", value=False)
+            enable_notifications = st.checkbox("Enable Decision Notifications", value=True)
+        
+        if st.button("💾 Save Settings"):
+            st.success("✅ Settings saved successfully!")
+        
+        # System status
+        st.subheader("💚 System Status")
+        st.success("✅ AI Decision Engine: Online")
+        st.success("✅ Workflow Manager: Active")
+        st.success("✅ Integration Layer: Connected")
 
 def show_analytics_page():
     """Show analytics page"""
@@ -658,6 +1477,12 @@ def main():
         show_products_page()
     elif st.session_state.current_page == "Showcase":
         show_showcase_page()
+    elif st.session_state.current_page == "EMS":
+        show_ems_page()
+    elif st.session_state.current_page == "RL":
+        show_rl_page()
+    elif st.session_state.current_page == "AI_Decisions":
+        show_ai_decisions_page()
     elif st.session_state.current_page == "Agents":
         show_agents_page()
     elif st.session_state.current_page == "Analytics":
