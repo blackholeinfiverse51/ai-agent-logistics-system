@@ -19,6 +19,8 @@ from user_product_models import USER_PRODUCT_CATALOG, get_user_product_by_id, Pr
 from ems_automation import ems_automation, EventType, TriggerPriority, trigger_restock_alert, trigger_purchase_order, trigger_shipment_notification, trigger_delivery_delay
 from rl_feedback_system import rl_feedback_system, get_rl_analytics, get_agent_recommendations, record_agent_action, record_action_outcome
 from logistics_ai_decisions import make_logistics_decision, process_order_with_ai, optimize_inventory_with_ai, logistics_workflow_manager
+from employee_management import employee_manager
+from seeya_assistant_integration import seeya_integration
 
 # Page configuration
 st.set_page_config(
@@ -175,6 +177,8 @@ def display_navigation():
         ("📧 EMS Automation", "EMS"),
         ("🧠 RL Learning", "RL"),
         ("🧐 AI Decisions", "AI_Decisions"),
+        ("👥 Employee Management", "Employees"),
+        ("🤖 Seeya Assistant", "Seeya"),
         ("🤖 AI Agents", "Agents"),
         ("📈 Analytics", "Analytics")
     ]
@@ -197,7 +201,7 @@ def show_overview_page():
     crm_data = get_crm_data()
     
     # Key metrics
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     
     with col1:
         st.metric("Total Orders", len(data['orders']), "+5 today")
@@ -212,13 +216,17 @@ def show_overview_page():
         st.metric("Suppliers", len(data['suppliers']), "3 active")
     
     with col5:
-        st.metric("Emails Sent", "47", "+12 today")
+        total_employees = len(employee_manager.get_all_employees())
+        st.metric("Employees", total_employees, "11 departments")
     
     with col6:
+        st.metric("Emails Sent", "47", "+12 today")
+    
+    with col7:
         rl_actions = len(rl_feedback_system.action_history)
         st.metric("RL Actions", rl_actions, "+8 today")
     
-    with col7:
+    with col8:
         ai_workflows = len(logistics_workflow_manager.get_active_workflows())
         st.metric("AI Workflows", ai_workflows, "+3 today")
     
@@ -248,7 +256,7 @@ def show_overview_page():
     
     # System status
     st.subheader("⚙️ System Status")
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     
     with col1:
         st.success("✅ CRM System: Online")
@@ -259,19 +267,24 @@ def show_overview_page():
         st.success("✅ Suppliers: Connected")
     
     with col3:
+        st.success("✅ Employee System: Active")
+        active_tasks = len([t for t in employee_manager.get_all_tasks() if t['status'] == 'pending'])
+        st.info(f"📋 {active_tasks} Active Tasks")
+    
+    with col4:
         st.success("✅ EMS Automation: Active")
         st.success("✅ AI Agents: Running")
     
-    with col4:
+    with col5:
         st.success("✅ RL Learning: Active")
         learning_agents = len(rl_feedback_system.optimizer.agent_performance)
         st.info(f"🧠 {learning_agents} Agents Learning")
     
-    with col5:
+    with col6:
         st.success("✅ AI Decisions: Online")
         st.info(f"🧐 Decision Engine Ready")
     
-    with col6:
+    with col7:
         st.success("✅ Database: Healthy")
         st.info(f"📅 {len(ems_automation.scheduled_emails)} Scheduled Emails")
 
@@ -1406,6 +1419,558 @@ def show_ai_decisions_page():
         st.success("✅ Workflow Manager: Active")
         st.success("✅ Integration Layer: Connected")
 
+def show_employees_page():
+    """Show employee management page"""
+    st.header("👥 Employee Management")
+    
+    # Employee tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "👥 Employees", "📋 Task Assignment", "📈 Reports"])
+    
+    with tab1:
+        st.subheader("📊 Employee Dashboard")
+        
+        # Get statistics
+        all_employees = employee_manager.get_all_employees()
+        dept_stats = employee_manager.get_department_stats()
+        all_tasks = employee_manager.get_all_tasks()
+        
+        # Key metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Employees", len(all_employees))
+        with col2:
+            st.metric("Departments", len(dept_stats))
+        with col3:
+            st.metric("Active Tasks", len([t for t in all_tasks if t['status'] == 'pending']))
+        with col4:
+            st.metric("Completed Tasks", len([t for t in all_tasks if t['status'] == 'completed']))
+        
+        # Department distribution
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🏢 Department Distribution")
+            if dept_stats:
+                fig = px.pie(values=list(dept_stats.values()), names=list(dept_stats.keys()))
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.subheader("📋 Task Status")
+            task_status = {}
+            for task in all_tasks:
+                status = task['status']
+                task_status[status] = task_status.get(status, 0) + 1
+            
+            if task_status:
+                fig = px.bar(x=list(task_status.keys()), y=list(task_status.values()))
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with tab2:
+        st.subheader("👥 Employee Directory")
+        
+        # Filter by department
+        departments = list(dept_stats.keys())
+        selected_dept = st.selectbox("Filter by Department", ["All"] + departments)
+        
+        # Display employees
+        if selected_dept == "All":
+            display_employees = all_employees
+        else:
+            display_employees = employee_manager.get_employees_by_department(selected_dept)
+        
+        # Employee cards
+        cols_per_row = 3
+        for i in range(0, len(display_employees), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, col in enumerate(cols):
+                if i + j < len(display_employees):
+                    emp = display_employees[i + j]
+                    with col:
+                        st.markdown(f"""
+                        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>{emp['name']}</h4>
+                            <p><strong>Department:</strong> {emp['department']}</p>
+                            <p><strong>Status:</strong> {emp['status']}</p>
+                            <p><strong>ID:</strong> {emp['id']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Quick task assignment
+                        if st.button(f"Assign Task", key=f"assign_{emp['id']}"):
+                            st.session_state.selected_employee = emp['id']
+                            st.session_state.current_page = "Employees"
+                            st.rerun()
+    
+    with tab3:
+        st.subheader("📋 Task Assignment")
+        
+        # Task templates (outside form)
+        st.subheader("Quick Templates")
+        col_t1, col_t2, col_t3 = st.columns(3)
+        
+        with col_t1:
+            if st.button("AI/ML Model Development"):
+                st.session_state.template_title = "AI/ML Model Development"
+                st.session_state.template_desc = "Develop and train machine learning model for logistics optimization"
+        
+        with col_t2:
+            if st.button("System Integration"):
+                st.session_state.template_title = "System Integration"
+                st.session_state.template_desc = "Integrate new component with existing system architecture"
+        
+        with col_t3:
+            if st.button("Testing & QA"):
+                st.session_state.template_title = "Testing & QA"
+                st.session_state.template_desc = "Perform comprehensive testing of system functionality"
+        
+        # Task assignment form
+        with st.form("assign_task"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Employee selection
+                employee_options = {f"{emp['name']} ({emp['department']})": emp['id'] for emp in all_employees}
+                selected_employee = st.selectbox("Select Employee", list(employee_options.keys()))
+                
+                # Use template if selected
+                default_title = getattr(st.session_state, 'template_title', "")
+                default_desc = getattr(st.session_state, 'template_desc', "")
+                
+                task_title = st.text_input("Task Title", value=default_title, placeholder="Enter task title")
+                task_description = st.text_area("Task Description", value=default_desc, placeholder="Enter task description")
+            
+            with col2:
+                priority = st.selectbox("Priority", ["low", "medium", "high", "urgent"])
+                due_date = st.date_input("Due Date")
+            
+            if st.form_submit_button("📋 Assign Task"):
+                if selected_employee and task_title:
+                    employee_id = employee_options[selected_employee]
+                    success = employee_manager.assign_task(
+                        employee_id, task_title, task_description, priority, str(due_date)
+                    )
+                    
+                    if success:
+                        st.success(f"✅ Task assigned to {selected_employee.split(' (')[0]}!")
+                        # Clear template
+                        if hasattr(st.session_state, 'template_title'):
+                            del st.session_state.template_title
+                            del st.session_state.template_desc
+                    else:
+                        st.error("❌ Failed to assign task")
+                else:
+                    st.error("Please fill in required fields")
+        
+        # Recent tasks
+        st.subheader("🕰️ Recent Tasks")
+        recent_tasks = all_tasks[:10]  # Last 10 tasks
+        
+        if recent_tasks:
+            for task in recent_tasks:
+                with st.expander(f"{task['title']} - {task['employee_name']}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Employee:** {task['employee_name']}")
+                        st.write(f"**Department:** {task['department']}")
+                        st.write(f"**Priority:** {task['priority']}")
+                    with col2:
+                        st.write(f"**Status:** {task['status']}")
+                        st.write(f"**Assigned:** {task['assigned_at'][:10]}")
+                        st.write(f"**Due:** {task['due_date']}")
+                    
+                    st.write(f"**Description:** {task['description']}")
+                    
+                    # Status update (outside expander to avoid form conflicts)
+                    col_status1, col_status2 = st.columns([3, 1])
+                    with col_status1:
+                        new_status = st.selectbox(
+                            "Update Status", 
+                            ["pending", "in_progress", "completed", "cancelled"],
+                            index=["pending", "in_progress", "completed", "cancelled"].index(task['status']),
+                            key=f"status_{task['task_id']}"
+                        )
+                    
+                    with col_status2:
+                        if st.button("Update", key=f"update_{task['task_id']}"):
+                            if employee_manager.update_task_status(task['task_id'], new_status):
+                                st.success("Status updated!")
+                                st.rerun()
+        else:
+            st.info("No tasks assigned yet")
+    
+    with tab4:
+        st.subheader("📈 Employee Reports")
+        
+        # Department performance
+        st.subheader("🏢 Department Performance")
+        
+        dept_performance = {}
+        for dept in dept_stats.keys():
+            dept_employees = employee_manager.get_employees_by_department(dept)
+            dept_tasks = []
+            for emp in dept_employees:
+                emp_tasks = employee_manager.get_employee_tasks(emp['id'])
+                dept_tasks.extend(emp_tasks)
+            
+            completed_tasks = len([t for t in dept_tasks if t['status'] == 'completed'])
+            total_tasks = len(dept_tasks)
+            
+            dept_performance[dept] = {
+                "employees": len(dept_employees),
+                "total_tasks": total_tasks,
+                "completed_tasks": completed_tasks,
+                "completion_rate": (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            }
+        
+        # Display performance table
+        perf_data = []
+        for dept, stats in dept_performance.items():
+            perf_data.append({
+                "Department": dept,
+                "Employees": stats["employees"],
+                "Total Tasks": stats["total_tasks"],
+                "Completed": stats["completed_tasks"],
+                "Completion Rate": f"{stats['completion_rate']:.1f}%"
+            })
+        
+        if perf_data:
+            perf_df = pd.DataFrame(perf_data)
+            st.dataframe(perf_df, use_container_width=True)
+        
+        # Task priority distribution
+        st.subheader("⚡ Task Priority Distribution")
+        priority_stats = {}
+        for task in all_tasks:
+            priority = task['priority']
+            priority_stats[priority] = priority_stats.get(priority, 0) + 1
+        
+        if priority_stats:
+            fig = px.bar(x=list(priority_stats.keys()), y=list(priority_stats.values()))
+            st.plotly_chart(fig, use_container_width=True)
+
+def show_seeya_page():
+    """Show Seeya Assistant integration page"""
+    st.header("🤖 Seeya Assistant Integration")
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0;">
+        <h2>🤖 Seeya Assistant Live Demo Integration</h2>
+        <p>From Seeya's Assistant to Rishabh's Logistics - Unified Experience Pipeline</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Seeya tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["💬 Message Processor", "📈 Analytics", "👤 User Preferences", "🔧 API Testing"])
+    
+    with tab1:
+        st.subheader("💬 Process Messages Through Integration Pipeline")
+        
+        # Message input form
+        with st.form("seeya_message_processor"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                user_id = st.text_input("User ID", value="demo_user", help="Unique identifier for the user")
+                platform = st.selectbox("Platform", [
+                    "whatsapp", "email", "slack", "teams", 
+                    "instagram", "telegram", "sms"
+                ], help="Source platform for the message")
+            
+            with col2:
+                conversation_id = st.text_input("Conversation ID (Optional)", help="Group conversation identifier")
+                timestamp = st.text_input("Timestamp", value=datetime.now().isoformat(), 
+                                        help="Message timestamp (ISO format)")
+            
+            message_text = st.text_area("Message Text", 
+                                      placeholder="Enter the message to process...",
+                                      help="The actual message content to analyze")
+            
+            # Quick message templates
+            st.subheader("📝 Quick Templates")
+            col1, col2, col3, col4 = st.columns(4)
+            
+            template_selected = False
+            with col1:
+                if st.form_submit_button("📦 Inventory Check"):
+                    message_text = "Check current inventory levels for wireless mouse and keyboards"
+                    template_selected = True
+            
+            with col2:
+                if st.form_submit_button("🔄 Restock Request"):
+                    message_text = "We're running low on wireless mouse inventory, need to restock urgently"
+                    template_selected = True
+            
+            with col3:
+                if st.form_submit_button("📋 Order Status"):
+                    message_text = "What's the status of order #12345? Customer is asking for updates"
+                    template_selected = True
+            
+            with col4:
+                if st.form_submit_button("🚚 Delivery Update"):
+                    message_text = "Track delivery for shipment FS123456789, customer reports delay"
+                    template_selected = True
+            
+            submitted = st.form_submit_button("🚀 Process Message")
+            
+            if (submitted or template_selected) and message_text:
+                with st.spinner("Processing message through integration pipeline..."):
+                    try:
+                        # Mock processing for demonstration
+                        import time
+                        time.sleep(2)  # Simulate processing time
+                        
+                        # Mock successful result
+                        st.success("✅ Message processed successfully!")
+                        
+                        # Display mock results
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.subheader("📝 Summary Results")
+                            mock_summary = {
+                                "Summary": "User requesting inventory check for wireless mouse",
+                                "Intent": "inventory_check",
+                                "Urgency": "medium",
+                                "Confidence": 0.85
+                            }
+                            st.json(mock_summary)
+                        
+                        with col2:
+                            st.subheader("📋 Task Created")
+                            mock_task = {
+                                "Task Summary": "Check inventory levels for wireless mouse",
+                                "Task Type": "inventory_check",
+                                "Priority": "medium",
+                                "Status": "pending"
+                            }
+                            st.json(mock_task)
+                        
+                        # Display logistics actions
+                        st.subheader("⚙️ Logistics Actions Triggered")
+                        
+                        mock_actions = [
+                            {
+                                "action_type": "inventory_check",
+                                "status": "completed",
+                                "created_at": datetime.now().isoformat(),
+                                "parameters": {
+                                    "query_type": "stock_levels",
+                                    "product": "wireless_mouse",
+                                    "urgency": "medium"
+                                }
+                            }
+                        ]
+                        
+                        for i, action in enumerate(mock_actions, 1):
+                            with st.expander(f"Action {i}: {action['action_type'].title()}"):
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.write(f"**Type:** {action['action_type']}")
+                                    st.write(f"**Status:** {action['status']}")
+                                with col2:
+                                    st.write(f"**Created:** {action['created_at'][:16]}")
+                                    st.write(f"**Parameters:** {len(action['parameters'])} items")
+                                
+                                st.json(action['parameters'])
+                        
+                        # Pipeline summary
+                        st.subheader("📈 Pipeline Summary")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total Actions", 1)
+                        with col2:
+                            st.metric("Executed Actions", 1)
+                        with col3:
+                            st.metric("Auto Execution", "✅ Enabled")
+                    
+                    except Exception as e:
+                        st.error(f"❌ Error processing message: {str(e)}")
+    
+    with tab2:
+        st.subheader("📈 Integration Analytics")
+        
+        # Mock analytics data
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Messages", "47", "+5 today")
+        
+        with col2:
+            st.metric("Total Actions", "89", "+12 today")
+        
+        with col3:
+            st.metric("Success Rate", "94.2%", "+2.3%")
+        
+        with col4:
+            st.metric("Active Users", "8", "+1 today")
+        
+        # Mock charts
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("📈 Integration Activity")
+            mock_data = {
+                'platform': ['whatsapp', 'email', 'slack', 'teams'],
+                'count': [15, 12, 8, 12],
+                'status': ['completed', 'completed', 'completed', 'completed']
+            }
+            df = pd.DataFrame(mock_data)
+            fig = px.bar(df, x='platform', y='count', color='status',
+                       title="Messages by Platform and Status")
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.subheader("⚙️ Logistics Actions")
+            mock_actions_data = {
+                'action_type': ['inventory_check', 'restock', 'order_tracking', 'delivery'],
+                'count': [25, 18, 22, 15]
+            }
+            df = pd.DataFrame(mock_actions_data)
+            fig = px.pie(df, values='count', names='action_type',
+                       title="Actions by Type")
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with tab3:
+        st.subheader("👤 User Preferences Management")
+        
+        # User selection
+        user_id = st.text_input("User ID", value="demo_user", help="Enter user ID to manage preferences")
+        
+        if st.button("🔍 Load Preferences"):
+            st.session_state.seeya_user_preferences = {
+                "auto_execute_logistics": True,
+                "department": "logistics",
+                "role": "user",
+                "notification_preferences": {"email": True, "slack": False}
+            }
+            st.session_state.seeya_selected_user = user_id
+        
+        if hasattr(st.session_state, 'seeya_user_preferences'):
+            st.subheader(f"Preferences for {st.session_state.seeya_selected_user}")
+            
+            with st.form("seeya_user_preferences"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    auto_execute = st.checkbox(
+                        "Auto-execute Logistics Actions",
+                        value=st.session_state.seeya_user_preferences.get("auto_execute_logistics", True),
+                        help="Automatically execute logistics actions without manual approval"
+                    )
+                    
+                    department = st.selectbox(
+                        "Department",
+                        ["general", "logistics", "procurement", "inventory", "sales", "support"],
+                        index=["general", "logistics", "procurement", "inventory", "sales", "support"].index(
+                            st.session_state.seeya_user_preferences.get("department", "general")
+                        )
+                    )
+                
+                with col2:
+                    role = st.selectbox(
+                        "Role",
+                        ["user", "manager", "admin", "analyst"],
+                        index=["user", "manager", "admin", "analyst"].index(
+                            st.session_state.seeya_user_preferences.get("role", "user")
+                        )
+                    )
+                    
+                    # Notification preferences
+                    st.subheader("📧 Notification Preferences")
+                    notif_prefs = st.session_state.seeya_user_preferences.get("notification_preferences", {})
+                    
+                    email_notifications = st.checkbox("Email Notifications", value=notif_prefs.get("email", True))
+                    slack_notifications = st.checkbox("Slack Notifications", value=notif_prefs.get("slack", False))
+                
+                if st.form_submit_button("💾 Save Preferences"):
+                    st.success("✅ Preferences saved successfully!")
+    
+    with tab4:
+        st.subheader("🔧 API Testing Interface")
+        
+        # API endpoint selection
+        endpoint = st.selectbox("Select Endpoint", [
+            "Seeya Assistant - Summarize",
+            "Seeya Assistant - Process Summary",
+            "Integration - Full Pipeline"
+        ])
+        
+        if endpoint == "Seeya Assistant - Summarize":
+            st.subheader("📝 Test Summarization")
+            
+            with st.form("test_seeya_summarize"):
+                test_message = st.text_area("Test Message", 
+                                          value="Check inventory levels for wireless mouse, we might be running low")
+                
+                if st.form_submit_button("🧪 Test Summarize"):
+                    with st.spinner("Testing summarization..."):
+                        # Mock response for demonstration
+                        mock_response = {
+                            "summary_id": "sum_12345",
+                            "message_id": "msg_12345",
+                            "summary": "User requesting inventory check for wireless mouse due to potential low stock",
+                            "type": "request",
+                            "intent": "inventory_check",
+                            "urgency": "medium",
+                            "confidence": 0.85,
+                            "reasoning": ["Contains inventory-related keywords", "Mentions specific product", "Indicates concern about stock levels"]
+                        }
+                        
+                        st.success("✅ Summarization test completed!")
+                        st.json(mock_response)
+        
+        elif endpoint == "Integration - Full Pipeline":
+            st.subheader("🚀 Test Full Pipeline")
+            
+            with st.form("test_seeya_pipeline"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    test_user = st.text_input("User ID", value="test_user")
+                    test_platform = st.selectbox("Platform", ["whatsapp", "email", "slack"])
+                
+                with col2:
+                    test_message = st.text_area("Message", 
+                                              value="We need to restock wireless mouse inventory urgently")
+                
+                if st.form_submit_button("🧪 Test Pipeline"):
+                    with st.spinner("Testing full pipeline..."):
+                        # Mock pipeline response
+                        mock_pipeline_response = {
+                            "success": True,
+                            "message_id": "msg_test_001",
+                            "summary": {
+                                "summary": "Urgent restock request for wireless mouse inventory",
+                                "intent": "restock_request",
+                                "urgency": "high",
+                                "confidence": 0.92
+                            },
+                            "task": {
+                                "task_id": "task_test_001",
+                                "task_summary": "Execute restock for wireless mouse",
+                                "task_type": "restock",
+                                "priority": "high",
+                                "status": "pending"
+                            },
+                            "logistics_actions": [
+                                {
+                                    "action_id": "action_001",
+                                    "action_type": "restock",
+                                    "status": "completed",
+                                    "parameters": {"product": "wireless_mouse", "quantity": 50}
+                                }
+                            ],
+                            "pipeline_summary": {
+                                "total_actions": 1,
+                                "executed_actions": 1,
+                                "auto_executed": True
+                            }
+                        }
+                        
+                        st.success("✅ Pipeline test completed!")
+                        st.json(mock_pipeline_response)
+
 def show_analytics_page():
     """Show analytics page"""
     st.header("📈 Analytics & Reports")
@@ -1483,6 +2048,10 @@ def main():
         show_rl_page()
     elif st.session_state.current_page == "AI_Decisions":
         show_ai_decisions_page()
+    elif st.session_state.current_page == "Employees":
+        show_employees_page()
+    elif st.session_state.current_page == "Seeya":
+        show_seeya_page()
     elif st.session_state.current_page == "Agents":
         show_agents_page()
     elif st.session_state.current_page == "Analytics":
