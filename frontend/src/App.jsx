@@ -1,7 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 import { ROUTES } from './utils/constants';
 
 // Pages
@@ -22,30 +24,56 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 
+// Auth Pages
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import OAuthCallback from './pages/auth/OAuthCallback';
+
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path={ROUTES.LOGISTICS} element={<Logistics />} />
-          <Route path={ROUTES.CRM} element={<CRM />} />
-          <Route path={ROUTES.INFIVERSE} element={<Infiverse />} />
-          <Route path={ROUTES.INVENTORY} element={<Inventory />} />
-          <Route path={ROUTES.SUPPLIERS} element={<Suppliers />} />
-          <Route path={ROUTES.PRODUCTS} element={<Products />} />
-          <Route path={ROUTES.AGENTS} element={<Agents />} />
-          <Route path={ROUTES.WORKFLOWS} element={<Workflows />} />
-          <Route path={ROUTES.DECISIONS} element={<Decisions />} />
-          <Route path={ROUTES.LEARNING} element={<Learning />} />
-          <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
-          <Route path={ROUTES.EMAILS} element={<Emails />} />
-          <Route path={ROUTES.REPORTS} element={<Reports />} />
-          <Route path={ROUTES.SETTINGS} element={<Settings />} />
-          <Route path={ROUTES.USERS} element={<Users />} />
-        </Route>
-      </Routes>
-      <Toaster position="top-right" />
+      <AuthProvider>
+        <Routes>
+          {/* Auth Routes */}
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/signup" element={<Signup />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/verify-email" element={<VerifyEmail />} />
+          <Route path="/auth/callback" element={<OAuthCallback />} />
+
+          {/* Protected Dashboard Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path={ROUTES.LOGISTICS} element={<Logistics />} />
+            <Route path={ROUTES.CRM} element={<CRM />} />
+            <Route path={ROUTES.INFIVERSE} element={<Infiverse />} />
+            <Route path={ROUTES.INVENTORY} element={<Inventory />} />
+            <Route path={ROUTES.SUPPLIERS} element={<Suppliers />} />
+            <Route path={ROUTES.PRODUCTS} element={<Products />} />
+            <Route path={ROUTES.AGENTS} element={<Agents />} />
+            <Route path={ROUTES.WORKFLOWS} element={<Workflows />} />
+            <Route path={ROUTES.DECISIONS} element={<Decisions />} />
+            <Route path={ROUTES.LEARNING} element={<Learning />} />
+            <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
+            <Route path={ROUTES.EMAILS} element={<Emails />} />
+            <Route path={ROUTES.REPORTS} element={<Reports />} />
+            <Route path={ROUTES.SETTINGS} element={<Settings />} />
+            <Route path={ROUTES.USERS} element={<Users />} />
+          </Route>
+
+          {/* Catch all - redirect to login */}
+          <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        </Routes>
+        <Toaster position="top-right" />
+      </AuthProvider>
     </Router>
   );
 }

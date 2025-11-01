@@ -1,11 +1,45 @@
 import React from 'react';
-import { Menu, Search, Bell, Moon, Sun, User } from 'lucide-react';
+import { Menu, Search, Bell, Moon, Sun, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/utils/helpers';
 import Button from '../common/ui/Button';
 import Badge from '../common/ui/Badge';
 
 export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
   const [notifications] = React.useState(3);
+  const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const getUserInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
+  const getUserDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
+  };
 
   return (
     <header className="h-16 bg-card shadow-sm backdrop-blur-sm border-b sticky top-0 z-30">
@@ -79,14 +113,66 @@ export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
           </Button>
 
           {/* User Profile */}
-          <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l">
-            <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shadow-glow-primary cursor-pointer hover:scale-110 transition-transform">
-              <User className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div className="hidden lg:block">
-              <p className="text-sm font-semibold">Admin User</p>
-              <p className="text-xs text-muted-foreground">admin@system.com</p>
-            </div>
+          <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 hover:bg-accent/50 rounded-lg p-1.5 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shadow-glow-primary">
+                <span className="text-sm font-bold text-primary-foreground">
+                  {getUserInitials()}
+                </span>
+              </div>
+              <div className="hidden lg:block text-left">
+                <p className="text-sm font-semibold">{getUserDisplayName()}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || 'user@system.com'}</p>
+              </div>
+              <ChevronDown className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform hidden lg:block",
+                showUserMenu && "rotate-180"
+              )} />
+            </button>
+
+            {/* User Dropdown Menu */}
+            {showUserMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-lg shadow-lg border border-border z-50 py-2">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-semibold">{getUserDisplayName()}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                    {profile?.company_name && (
+                      <p className="text-xs text-muted-foreground mt-1">{profile.company_name}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-accent/50 transition-colors flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleLogout();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-accent/50 transition-colors flex items-center gap-2 text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
