@@ -6,6 +6,7 @@ import { cn } from '@/utils/helpers';
 
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -18,6 +19,30 @@ export const Layout = () => {
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  // Close mobile sidebar when screen becomes larger
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
 
   const toggleTheme = () => {
     const newTheme = !isDark;
@@ -33,11 +58,17 @@ export const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isCollapsed={sidebarCollapsed}
+        onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
       
       <div className={cn(
         'transition-all duration-300',
-        'lg:ml-64'
+        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64',
+        'ml-0'
       )}>
         <Header 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
@@ -45,7 +76,7 @@ export const Layout = () => {
           onThemeToggle={toggleTheme}
         />
         
-        <main className="p-6">
+        <main className="p-4 sm:p-6 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>

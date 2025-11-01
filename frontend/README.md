@@ -167,6 +167,37 @@ The application is fully responsive and works on:
 - Tablet (768px - 1023px)
 - Mobile (320px - 767px)
 
+### 🎯 Responsive Sidebar Features
+
+#### Desktop (≥ 1024px)
+- **Collapsible Sidebar**: Toggle between 256px (full) and 64px (icons only)
+- **Smooth Transitions**: 300ms animations between states
+- **Tooltips**: Hover over icons in collapsed state to see labels
+- **Content Adjustment**: Main content automatically adjusts margin
+
+#### Mobile (< 1024px)
+- **Overlay Mode**: Sidebar slides in from left with backdrop blur
+- **Touch Optimized**: Minimum 44x44px touch targets
+- **Auto-close**: Sidebar closes when navigating or clicking backdrop
+- **Scroll Lock**: Body scroll is locked when sidebar is open
+
+#### Testing the Sidebar
+
+**Desktop:**
+1. Click ChevronLeft/Right button to collapse/expand
+2. Watch sidebar smoothly transition between 256px ↔ 64px
+3. Hover over icons in collapsed state to see tooltips
+
+**Mobile:**
+1. Click hamburger menu (☰) to open
+2. Sidebar slides in with dark backdrop
+3. Click any menu item or backdrop to close
+4. Sidebar auto-closes when navigating
+
+For detailed responsive features, see **[RESPONSIVE_FEATURES.md](./RESPONSIVE_FEATURES.md)**
+
+For sidebar functionality guide, see **[SIDEBAR_DEMO.md](./SIDEBAR_DEMO.md)**
+
 ## 🎨 Customization
 
 ### Theme Colors
