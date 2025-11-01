@@ -28,7 +28,7 @@ export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
     if (user?.email) {
       return user.email[0].toUpperCase();
     }
-    return 'U';
+    return 'DV'; // Dev mode
   };
 
   const getUserDisplayName = () => {
@@ -38,7 +38,11 @@ export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
     if (user?.email) {
       return user.email.split('@')[0];
     }
-    return 'User';
+    return 'Dev User'; // Dev mode
+  };
+
+  const getUserEmail = () => {
+    return user?.email || 'dev@localhost';
   };
 
   return (
@@ -125,7 +129,7 @@ export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
               </div>
               <div className="hidden lg:block text-left">
                 <p className="text-sm font-semibold">{getUserDisplayName()}</p>
-                <p className="text-xs text-muted-foreground">{user?.email || 'user@system.com'}</p>
+                <p className="text-xs text-muted-foreground">{getUserEmail()}</p>
               </div>
               <ChevronDown className={cn(
                 "h-4 w-4 text-muted-foreground transition-transform hidden lg:block",
@@ -143,7 +147,7 @@ export const Header = ({ onMenuClick, isDark, onThemeToggle }) => {
                 <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-lg shadow-lg border border-border z-50 py-2">
                   <div className="px-4 py-3 border-b border-border">
                     <p className="text-sm font-semibold">{getUserDisplayName()}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{getUserEmail()}</p>
                     {profile?.company_name && (
                       <p className="text-xs text-muted-foreground mt-1">{profile.company_name}</p>
                     )}

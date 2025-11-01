@@ -69,8 +69,8 @@ function App() {
             <Route path={ROUTES.USERS} element={<Users />} />
           </Route>
 
-          {/* Catch all - redirect to login */}
-          <Route path="*" element={<Navigate to="/auth/login" replace />} />
+          {/* Catch all - redirect to dashboard in dev mode */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster position="top-right" />
       </AuthProvider>
