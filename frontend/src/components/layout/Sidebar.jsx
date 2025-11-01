@@ -2,47 +2,46 @@ import React from 'react';
 import { 
   LayoutDashboard, Package, Users, Building2, ShoppingCart, Bot,
   Workflow, Brain, GraduationCap, Bell, Mail, BarChart3, Settings,
-  UsersRound, Menu, X, ChevronLeft, ChevronRight
+  UsersRound, Menu, X, ChevronLeft, ChevronRight, TrendingUp, Zap,
+  FileText, Store, Activity, Database, Sparkles
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/utils/helpers';
 import { ROUTES } from '@/utils/constants';
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: ROUTES.DASHBOARD },
+  { name: 'Overview', icon: LayoutDashboard, path: ROUTES.DASHBOARD },
   { 
-    name: 'Core Business',
+    name: 'CRM & Logistics',
     items: [
-      { name: 'Logistics', icon: Package, path: ROUTES.LOGISTICS },
-      { name: 'CRM', icon: Users, path: ROUTES.CRM },
-      { name: 'Infiverse', icon: UsersRound, path: ROUTES.INFIVERSE },
-      { name: 'Inventory', icon: ShoppingCart, path: ROUTES.INVENTORY },
-      { name: 'Suppliers', icon: Building2, path: ROUTES.SUPPLIERS },
-      { name: 'Products', icon: Package, path: ROUTES.PRODUCTS },
+      { name: 'CRM Management', icon: Users, path: ROUTES.CRM },
+      { name: 'Logistics & Inventory', icon: Package, path: ROUTES.LOGISTICS },
+      { name: 'Infiverse Monitoring', icon: UsersRound, path: ROUTES.INFIVERSE },
+      { name: 'Supplier Management', icon: Building2, path: ROUTES.SUPPLIERS },
+      { name: 'Product Catalog', icon: ShoppingCart, path: ROUTES.PRODUCTS },
+      { name: 'Supplier Showcase', icon: Store, path: '/showcase' },
     ]
   },
   {
     name: 'AI & Automation',
     items: [
+      { name: 'EMS Automation', icon: Mail, path: ROUTES.EMAILS },
+      { name: 'RL Learning', icon: GraduationCap, path: ROUTES.LEARNING },
+      { name: 'AI Decisions', icon: Brain, path: ROUTES.DECISIONS },
       { name: 'AI Agents', icon: Bot, path: ROUTES.AGENTS },
-      { name: 'Workflows', icon: Workflow, path: ROUTES.WORKFLOWS },
-      { name: 'Decisions', icon: Brain, path: ROUTES.DECISIONS },
-      { name: 'Learning', icon: GraduationCap, path: ROUTES.LEARNING },
     ]
   },
   {
-    name: 'Communication',
+    name: 'Analytics & Reports',
     items: [
-      { name: 'Notifications', icon: Bell, path: ROUTES.NOTIFICATIONS },
-      { name: 'Emails', icon: Mail, path: ROUTES.EMAILS },
-      { name: 'Reports', icon: BarChart3, path: ROUTES.REPORTS },
+      { name: 'Analytics', icon: BarChart3, path: '/analytics' },
     ]
   },
   {
     name: 'System',
     items: [
+      { name: 'Notifications', icon: Bell, path: ROUTES.NOTIFICATIONS },
       { name: 'Settings', icon: Settings, path: ROUTES.SETTINGS },
-      { name: 'Users', icon: UsersRound, path: ROUTES.USERS },
     ]
   },
 ];
@@ -141,6 +140,28 @@ export const Sidebar = ({ isOpen, onToggle, isCollapsed, onCollapseToggle }) => 
         </nav>
       </aside>
     </>
+  );
+};
+
+const StatusItem = ({ label, status }) => {
+  const isOnline = status === 'online';
+  
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <div className={cn(
+          "w-2 h-2 rounded-full",
+          isOnline ? "bg-success animate-pulse" : "bg-destructive"
+        )} />
+        <span className={cn(
+          "font-medium",
+          isOnline ? "text-success" : "text-destructive"
+        )}>
+          {isOnline ? 'Online' : 'Offline'}
+        </span>
+      </div>
+    </div>
   );
 };
 
