@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Package, Users, ShoppingCart, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { 
+  Package, 
+  Users, 
+  ShoppingCart, 
+  TrendingUp, 
+  Activity, 
+  AlertCircle, 
+  UserCheck, 
+  Box, 
+  Truck, 
+  Briefcase, 
+  Mail, 
+  Zap, 
+  Workflow 
+} from 'lucide-react';
 import MetricCard from '../components/common/charts/MetricCard';
 import LineChart from '../components/common/charts/LineChart';
 import BarChart from '../components/common/charts/BarChart';
@@ -12,8 +26,13 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     totalOrders: 1248,
-    activeCustomers: 532,
-    inventoryItems: 3842,
+    activeAccounts: 532,
+    products: 3842,
+    suppliers: 156,
+    employees: 48,
+    emailsSent: 2847,
+    rlActions: 1523,
+    aiWorkflows: 12,
     revenue: 128540,
   });
 
@@ -43,10 +62,8 @@ export const Dashboard = () => {
   ];
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    // Data is already available, no need to wait
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -57,8 +74,10 @@ export const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-heading font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-4xl font-heading font-bold tracking-tight bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          Dashboard Overview
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
           Welcome back! Here's what's happening with your business today.
         </p>
       </div>
@@ -74,100 +93,150 @@ export const Dashboard = () => {
           variant="primary"
         />
         <MetricCard
-          title="Active Customers"
-          value={metrics.activeCustomers.toLocaleString()}
+          title="Active Accounts"
+          value={metrics.activeAccounts.toLocaleString()}
           trend="up"
           trendValue="+8.2%"
-          icon={Users}
+          icon={UserCheck}
           variant="secondary"
         />
         <MetricCard
-          title="Inventory Items"
-          value={metrics.inventoryItems.toLocaleString()}
-          trend="down"
-          trendValue="-3.1%"
-          icon={ShoppingCart}
+          title="Products"
+          value={metrics.products.toLocaleString()}
+          trend="up"
+          trendValue="+5.7%"
+          icon={Box}
           variant="accent"
         />
         <MetricCard
-          title="Revenue"
-          value={`$${(metrics.revenue / 1000).toFixed(1)}K`}
+          title="Suppliers"
+          value={metrics.suppliers.toLocaleString()}
           trend="up"
-          trendValue="+15.3%"
-          icon={TrendingUp}
+          trendValue="+3.4%"
+          icon={Truck}
+          variant="success"
+        />
+        <MetricCard
+          title="Employees"
+          value={metrics.employees.toLocaleString()}
+          trend="up"
+          trendValue="+2.1%"
+          icon={Briefcase}
+          variant="primary"
+        />
+        <MetricCard
+          title="Emails Sent"
+          value={metrics.emailsSent.toLocaleString()}
+          trend="up"
+          trendValue="+18.9%"
+          icon={Mail}
+          variant="secondary"
+        />
+        <MetricCard
+          title="RL Actions"
+          value={metrics.rlActions.toLocaleString()}
+          trend="up"
+          trendValue="+24.3%"
+          icon={Zap}
+          variant="accent"
+        />
+        <MetricCard
+          title="AI Workflows"
+          value={metrics.aiWorkflows.toLocaleString()}
+          trend="up"
+          trendValue="+16.7%"
+          icon={Workflow}
           variant="success"
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LineChart
-          title="Sales & Orders Trend"
-          data={salesData}
-          lines={[
-            { dataKey: 'sales', name: 'Sales ($)', color: 'hsl(var(--primary))' },
-            { dataKey: 'orders', name: 'Orders', color: 'hsl(var(--secondary))' },
-          ]}
-          height={300}
-        />
+        <div className="transform transition-all duration-300 hover:scale-[1.02]">
+          <LineChart
+            title="Sales & Orders Trend"
+            data={salesData}
+            lines={[
+              { dataKey: 'sales', name: 'Sales ($)', color: 'hsl(var(--primary))' },
+              { dataKey: 'orders', name: 'Orders', color: 'hsl(var(--secondary))' },
+            ]}
+            height={300}
+          />
+        </div>
         
-        <BarChart
-          title="Activity by Category"
-          data={categoryData}
-          bars={[
-            { dataKey: 'logistics', name: 'Logistics', color: 'hsl(var(--primary))' },
-            { dataKey: 'crm', name: 'CRM', color: 'hsl(var(--secondary))' },
-            { dataKey: 'inventory', name: 'Inventory', color: 'hsl(var(--accent))' },
-          ]}
-          height={300}
-        />
+        <div className="transform transition-all duration-300 hover:scale-[1.02]">
+          <BarChart
+            title="Activity by Category"
+            data={categoryData}
+            bars={[
+              { dataKey: 'logistics', name: 'Logistics', color: 'hsl(var(--primary))' },
+              { dataKey: 'crm', name: 'CRM', color: 'hsl(var(--secondary))' },
+              { dataKey: 'inventory', name: 'Inventory', color: 'hsl(var(--accent))' },
+            ]}
+            height={300}
+          />
+        </div>
       </div>
 
       {/* Recent Activity & System Health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="lg:col-span-2 border-l-4 border-primary/50 shadow-lg shadow-primary/10 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activity
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <Activity className="h-4 w-4 text-white" />
+              </div>
+              <span>Recent Activity</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
+            <div className="space-y-3">
+              {recentActivity.map((activity, index) => (
                 <div 
                   key={activity.id}
-                  className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  className="group flex items-start gap-4 p-3 rounded-lg hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent transition-all duration-300 border border-transparent hover:border-primary/20"
                 >
-                  <div className={`w-2 h-2 rounded-full mt-2 bg-${activity.status}`} />
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    activity.status === 'success' ? 'bg-green-500' :
+                    activity.status === 'warning' ? 'bg-yellow-500' :
+                    activity.status === 'info' ? 'bg-blue-500' : 'bg-gray-500'
+                  } animate-pulse`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{activity.message}</p>
+                    <p className="text-sm font-medium group-hover:text-primary transition-colors">{activity.message}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatRelativeTime(activity.time)}
                     </p>
                   </div>
-                  <Badge variant={activity.status}>{activity.type}</Badge>
+                  <Badge variant={activity.status} className="transition-transform group-hover:scale-110">
+                    {activity.type}
+                  </Badge>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* System Health */}
-        <Card>
-          <CardHeader>
+        {/* System Status */}
+        <Card className="border-l-4 border-secondary/50 shadow-lg shadow-secondary/10 hover:shadow-xl hover:shadow-secondary/20 transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-secondary/5 to-transparent">
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              System Health
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-secondary to-accent flex items-center justify-center">
+                <Activity className="h-4 w-4 text-white" />
+              </div>
+              <span>System Status</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <HealthMetric label="API Status" value="Operational" status="success" />
-            <HealthMetric label="Database" value="99.9% uptime" status="success" />
-            <HealthMetric label="AI Agents" value="5 Active" status="success" />
-            <HealthMetric label="Workflows" value="12 Running" status="info" />
-            <HealthMetric label="Pending Tasks" value="3 Items" status="warning" />
+          <CardContent className="space-y-2">
+            <SystemStatusItem label="CRM System" isOnline={true} />
+            <SystemStatusItem label="Inventory" isOnline={true} />
+            <SystemStatusItem label="Employee System" isOnline={true} />
+            <SystemStatusItem label="EMS Automation" isOnline={true} />
+            <SystemStatusItem label="RL Learning" isOnline={false} />
+            <SystemStatusItem label="AI Decisions" isOnline={true} />
+            <SystemStatusItem label="Logistics" isOnline={true} />
+            <SystemStatusItem label="Suppliers" isOnline={true} />
+            <SystemStatusItem label="AI Agents" isOnline={true} />
           </CardContent>
         </Card>
       </div>
@@ -175,10 +244,23 @@ export const Dashboard = () => {
   );
 };
 
-const HealthMetric = ({ label, value, status }) => (
-  <div className="flex items-center justify-between">
-    <span className="text-sm text-muted-foreground">{label}</span>
-    <Badge variant={status}>{value}</Badge>
+const SystemStatusItem = ({ label, isOnline }) => (
+  <div className="group flex items-center justify-between p-3 rounded-lg hover:bg-gradient-to-r hover:from-muted/30 hover:to-transparent transition-all duration-300 border border-transparent hover:border-secondary/20">
+    <span className="text-sm font-medium group-hover:text-secondary transition-colors">{label}</span>
+    <div className="flex items-center gap-2">
+      <div className={`relative w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}>
+        {isOnline && (
+          <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />
+        )}
+      </div>
+      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+        isOnline 
+          ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
+          : 'bg-red-500/10 text-red-600 border border-red-500/20'
+      }`}>
+        {isOnline ? 'ONLINE' : 'OFFLINE'}
+      </span>
+    </div>
   </div>
 );
 
