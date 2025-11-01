@@ -24,6 +24,7 @@ import { formatRelativeTime } from '@/utils/dateUtils';
 
 export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [metrics, setMetrics] = useState({
     totalOrders: 1248,
     activeAccounts: 532,
@@ -64,6 +65,13 @@ export const Dashboard = () => {
   useEffect(() => {
     // Data is already available, no need to wait
     setLoading(false);
+
+    // Update time every second
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   if (loading) {
