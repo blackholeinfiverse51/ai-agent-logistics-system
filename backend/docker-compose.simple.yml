@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: ai-agent-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///data/logistics_agent.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: ai-agent-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  audit:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: ai-agent-audit
+    ports:
+      - "8502:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - ./data:/app/data
+    command: streamlit run audit_dashboard.py --server.port=8501
+    depends_on:
+      - api
+    restart: unless-stopped

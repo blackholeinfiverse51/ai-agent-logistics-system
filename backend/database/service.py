@@ -14,6 +14,7 @@ from .models import (
     AgentLog, HumanReview, Inventory, PurchaseOrder, Supplier,
     Shipment, Courier, DeliveryEvent
 )
+from .audit import AuditLog
 
 class DatabaseService:
     """Database service for AI Agent operations"""
@@ -567,3 +568,43 @@ class DatabaseService:
             'purchase_orders': purchase_orders,
             'automation_rate': ((total_actions - total_reviews) / total_actions * 100) if total_actions > 0 else 0
         }
+    
+    def get_audit_logs(self, start_date=None, actions=None, user=None):
+        """Get audit logs with filters"""
+        query = self.db.query(AuditLog)
+        if start_date:
+            query = query.filter(AuditLog.timestamp >= start_date)
+        if actions:
+            query = query.filter(AuditLog.action.in_(actions))
+        if user:
+            query = query.filter(AuditLog.user.like(f'%{user}%'))
+        
+        logs = query.order_by(desc(AuditLog.timestamp)).all()
+        return pd.DataFrame([{
+            'timestamp': log.timestamp,
+            'user': log.user,
+            'action': log.action,
+            'resource': log.resource,
+            'status': log.status,
+            'ip_address': log.ip_address
+        } for log in logs])
+    
+    def log_audit(self, user, action, resource, resource_id=None, status='SUCCESS', ip='', user_agent='', details=''):
+        """Log audit entry"""
+        try:
+            audit = AuditLog(
+                user=user,
+                action=action,
+                resource=resource,
+                resource_id=resource_id,
+                status=status,
+                ip_address=ip,
+                user_agent=user_agent,
+                details=details
+            )
+            self.db.add(audit)
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            return False
