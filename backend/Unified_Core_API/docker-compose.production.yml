@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  unified-core-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unified-core-api
+    ports:
+      - "8005:8005"
+    environment:
+      - ENVIRONMENT=production
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://user:pass@postgres:5432/unified_db
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - unified-network
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dashboard:
+    build:
+      context: ../dashboard-frontend
+      dockerfile: Dockerfile
+    container_name: unified-dashboard
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://unified-core-api:8005
+      - NODE_ENV=production
+    networks:
+      - unified-network
+    restart: unless-stopped
+    depends_on:
+      - unified-core-api
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: unified-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - unified-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: unified-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - unified-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: unified-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=unified_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - unified-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: unified-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - unified-network
+    restart: unless-stopped
+    depends_on:
+      - unified-core-api
+      - dashboard
+
+networks:
+  unified-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+  postgres_data:

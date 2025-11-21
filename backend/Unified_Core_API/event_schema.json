@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Unified Event Schema",
+  "description": "Shared event schema for Task/Order → AI → RL → Workflow → Compliance → Dashboard",
+  "type": "object",
+  "required": ["task_id", "user_id", "event_type", "consent_flag"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Unique task/order identifier"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User/customer identifier"
+    },
+    "rl_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Reinforcement Learning score (0-1)"
+    },
+    "consent_flag": {
+      "type": "boolean",
+      "description": "User consent for data processing"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "task_created",
+        "order_placed",
+        "ai_processed",
+        "rl_evaluated",
+        "workflow_triggered",
+        "compliance_checked",
+        "dashboard_updated",
+        "task_completed",
+        "delivery_scheduled",
+        "feedback_received"
+      ],
+      "description": "Type of event in the pipeline"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional event-specific data",
+      "properties": {
+        "source_system": {"type": "string"},
+        "priority": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+        "dhi_score": {"type": "number"},
+        "compliance_status": {"type": "string"}
+      }
+    }
+  }
+}

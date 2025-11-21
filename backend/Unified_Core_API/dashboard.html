@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Core API - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .header p { opacity: 0.9; }
+        .container { max-width: 1400px; margin: 2rem auto; padding: 0 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #334155; }
+        .card h3 { color: #818cf8; margin-bottom: 1rem; font-size: 1.1rem; }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .status.active { background: #10b981; color: white; }
+        .status.healthy { background: #10b981; color: white; }
+        .metric { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #334155; }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: #94a3b8; }
+        .metric-value { font-weight: 600; color: #e2e8f0; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .table th { background: #334155; padding: 0.75rem; text-align: left; font-weight: 600; color: #818cf8; }
+        .table td { padding: 0.75rem; border-bottom: 1px solid #334155; }
+        .table tr:hover { background: #334155; }
+        .btn { background: #667eea; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 0.5rem; }
+        .btn:hover { background: #5568d3; }
+        .log-entry { background: #334155; padding: 0.75rem; margin: 0.5rem 0; border-radius: 6px; font-size: 0.9rem; }
+        .timestamp { color: #94a3b8; font-size: 0.85rem; }
+        .refresh-btn { position: fixed; bottom: 2rem; right: 2rem; background: #10b981; padding: 1rem 2rem; border-radius: 50px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Unified Core API Dashboard</h1>
+        <p>Platform Orchestrator & Production Go-Live | Lead: Rishabh Yadav</p>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <h3>📊 System Status</h3>
+                <div id="systemStatus">Loading...</div>
+            </div>
+            <div class="card">
+                <h3>🏥 Health Check</h3>
+                <div id="healthStatus">Loading...</div>
+            </div>
+            <div class="card">
+                <h3>📈 Statistics</h3>
+                <div id="statistics">Loading...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>👥 CRM - Leads</h3>
+            <table class="table" id="leadsTable">
+                <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Status</th><th>Created</th></tr></thead>
+                <tbody><tr><td colspan="5">Loading...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3>💼 CRM - Opportunities</h3>
+            <table class="table" id="opportunitiesTable">
+                <thead><tr><th>ID</th><th>Lead ID</th><th>Value</th><th>Stage</th><th>Created</th></tr></thead>
+                <tbody><tr><td colspan="5">Loading...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3>📦 Logistics - Orders</h3>
+            <table class="table" id="ordersTable">
+                <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Created</th></tr></thead>
+                <tbody><tr><td colspan="5">Loading...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3>📋 Unified Event Logs</h3>
+            <div id="logs">Loading...</div>
+        </div>
+    </div>
+
+    <button class="btn refresh-btn" onclick="loadAll()">🔄 Refresh</button>
+
+    <script>
+        const API_BASE = 'http://localhost:8005';
+
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
+            }
+        }
+
+        async function loadSystemStatus() {
+            const data = await fetchData('/');
+            if (data) {
+                document.getElementById('systemStatus').innerHTML = `
+                    <div class="metric"><span class="metric-label">System</span><span class="metric-value">${data.system}</span></div>
+                    <div class="metric"><span class="metric-label">Version</span><span class="metric-value">${data.version}</span></div>
+                    <div class="metric"><span class="metric-label">Status</span><span class="status active">${data.status}</span></div>
+                    <div class="metric"><span class="metric-label">Modules</span><span class="metric-value">${data.modules.length} integrated</span></div>
+                    <div class="metric"><span class="metric-label">Lead</span><span class="metric-value">${data.lead}</span></div>
+                `;
+            }
+        }
+
+        async function loadHealth() {
+            const data = await fetchData('/health');
+            if (data) {
+                const modules = Object.entries(data.modules).map(([key, value]) => 
+                    `<div class="metric"><span class="metric-label">${key}</span><span class="status ${value}">${value}</span></div>`
+                ).join('');
+                document.getElementById('healthStatus').innerHTML = `
+                    <div class="metric"><span class="metric-label">Overall</span><span class="status healthy">${data.status}</span></div>
+                    ${modules}
+                `;
+            }
+        }
+
+        async function loadStatistics() {
+            const leads = await fetchData('/crm/leads');
+            const opportunities = await fetchData('/crm/opportunities');
+            const orders = await fetchData('/logistics/orders');
+            const logs = await fetchData('/logs?limit=100');
+            
+            document.getElementById('statistics').innerHTML = `
+                <div class="metric"><span class="metric-label">Total Leads</span><span class="metric-value">${leads?.total || 0}</span></div>
+                <div class="metric"><span class="metric-label">Opportunities</span><span class="metric-value">${opportunities?.total || 0}</span></div>
+                <div class="metric"><span class="metric-label">Orders</span><span class="metric-value">${orders?.total || 0}</span></div>
+                <div class="metric"><span class="metric-label">Events Logged</span><span class="metric-value">${logs?.count || 0}</span></div>
+            `;
+        }
+
+        async function loadLeads() {
+            const data = await fetchData('/crm/leads');
+            if (data && data.leads && data.leads.length > 0) {
+                const rows = data.leads.map(lead => `
+                    <tr>
+                        <td>${lead.id}</td>
+                        <td>${lead.name}</td>
+                        <td>${lead.email}</td>
+                        <td><span class="status active">${lead.status}</span></td>
+                        <td class="timestamp">${new Date(lead.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+                document.querySelector('#leadsTable tbody').innerHTML = rows;
+            } else {
+                document.querySelector('#leadsTable tbody').innerHTML = '<tr><td colspan="5">No leads found</td></tr>';
+            }
+        }
+
+        async function loadOpportunities() {
+            const data = await fetchData('/crm/opportunities');
+            if (data && data.opportunities && data.opportunities.length > 0) {
+                const rows = data.opportunities.map(opp => `
+                    <tr>
+                        <td>${opp.id}</td>
+                        <td>${opp.lead_id}</td>
+                        <td>$${opp.value.toLocaleString()}</td>
+                        <td><span class="status active">${opp.stage}</span></td>
+                        <td class="timestamp">${new Date(opp.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+                document.querySelector('#opportunitiesTable tbody').innerHTML = rows;
+            } else {
+                document.querySelector('#opportunitiesTable tbody').innerHTML = '<tr><td colspan="5">No opportunities found</td></tr>';
+            }
+        }
+
+        async function loadOrders() {
+            const data = await fetchData('/logistics/orders');
+            if (data && data.orders && data.orders.length > 0) {
+                const rows = data.orders.map(order => `
+                    <tr>
+                        <td>${order.id}</td>
+                        <td>${order.customer_id}</td>
+                        <td>$${order.total.toLocaleString()}</td>
+                        <td><span class="status active">${order.status}</span></td>
+                        <td class="timestamp">${new Date(order.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+                document.querySelector('#ordersTable tbody').innerHTML = rows;
+            } else {
+                document.querySelector('#ordersTable tbody').innerHTML = '<tr><td colspan="5">No orders found</td></tr>';
+            }
+        }
+
+        async function loadLogs() {
+            const data = await fetchData('/logs?limit=10');
+            if (data && data.logs && data.logs.length > 0) {
+                const logEntries = data.logs.map(log => `
+                    <div class="log-entry">
+                        <strong>${log.event_type}</strong> | 
+                        Ref: ${log.reference_id || log.task_id || 'N/A'} | 
+                        RL Score: ${log.rl_score} | 
+                        Consent: ${log.consent_flag ? '✅' : '❌'}
+                        <div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+                document.getElementById('logs').innerHTML = logEntries;
+            } else {
+                document.getElementById('logs').innerHTML = '<p>No logs found</p>';
+            }
+        }
+
+        async function loadAll() {
+            await Promise.all([
+                loadSystemStatus(),
+                loadHealth(),
+                loadStatistics(),
+                loadLeads(),
+                loadOpportunities(),
+                loadOrders(),
+                loadLogs()
+            ]);
+        }
+
+        // Load data on page load
+        loadAll();
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadAll, 10000);
+    </script>
+</body>
+</html>
